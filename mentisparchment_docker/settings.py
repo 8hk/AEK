@@ -31,7 +31,8 @@ environ.Env.read_env(os.path.join(BASE_DIR,".env"))
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 's0_z8mnx98nn0$@%9d_ay+fse+0ozh@j81x6ebh#qh2*h+1f=n'
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", " ")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -61,7 +62,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'mentisparchment_docker.urls'
+ROOT_URLCONF = os.environ.get("DJANGO_ROOT_URL", "mentisparchment_docker.urls")
 
 TEMPLATES = [
     {
@@ -82,20 +83,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'mentisparchment_docker.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-# HOST = 'mongodb:27017'
-# mongoengine.connect(
-#     db='mentisparchment_docker',
-#     host=HOST,
-#     read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED
-# )
-
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
         'ENFORCE_SCHEMA': True,
-        'NAME': 'mentisparchment_docker',
+        'NAME': os.environ.get("MONGODB_DATABASE", "mentisparchment_docker"),
         'CLIENT':{
             'host': os.environ.get("MONGO_DB_HOST", "172.16.0.2"),
             'port': int(os.environ.get("MONGO_DB_PORT", 27017)),
