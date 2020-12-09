@@ -11,12 +11,22 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 from pathlib import Path
-import mongoengine
+import environ
 import pymongo
+import os
+import sys
+print('********** SETTINGS **********')
+print("Python Version:\n {}".format(sys.version))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env(
+    # set casting, default value
+    DEBUG=(bool, True)
+)
 
+# reading .env file
+environ.Env.read_env(os.path.join(BASE_DIR,".env"))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -74,26 +84,28 @@ WSGI_APPLICATION = 'mentisparchment_docker.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-HOST = 'mongodb:27017'
-mongoengine.connect(
-    db='mentisparchment_docker',
-    host=HOST,
-    read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED
-)
+# HOST = 'mongodb:27017'
+# mongoengine.connect(
+#     db='mentisparchment_docker',
+#     host=HOST,
+#     read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED
+# )
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'ENFORCE_SCHEMA': True,
-#         'NAME': 'mentisparchment_docker',
-#         'HOST': HOST,
-#         'PORT': 27017,
-#         'USER': 'root',
-#         'PASSWORD': 'mongoadmin',
-#         'AUTH_SOURCE': 'admin',
-#         'AUTH_MECHANISM': 'SCRAM-SHA-1',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'ENFORCE_SCHEMA': True,
+        'NAME': 'mentisparchment_docker',
+        'CLIENT':{
+            'host': os.environ.get("MONGO_DB_HOST", "172.16.0.2"),
+            'port': int(os.environ.get("MONGO_DB_PORT", 27017)),
+            'username': os.environ.get("MONGO_DB_USERNAME", 'root'),
+            'password': os.environ.get("MONGO_DB_PASSWORD", 'mongoadmin'),
+            'authSource':os.environ.get("MONGO_DB_AUTH_SOURCE", 'admin'),
+            'authMechanism': os.environ.get("MONGO_DB_AUTH_MECH", 'SCRAM-SHA-1'),
+        }
+    }
+}
 
 
 # Password validation

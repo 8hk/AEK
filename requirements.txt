@@ -1,6 +1,4 @@
-django== 2.2.8
-# djongo==1.2.30
+django
 djongo
 six
-mongoengine
-pymongo
+django-environ

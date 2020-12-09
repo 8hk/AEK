@@ -2,7 +2,7 @@ version: '3.1'
 services:
   mongodb:
     image: mongo:3.4
-    restart: always
+    restart: "no"
     command: mongod --smallfiles
     container_name: mongodb
     volumes:
@@ -18,7 +18,7 @@ services:
   mongo-express:
     image: mongo-express
     container_name: mongoexpressweb
-    restart: always
+    restart: "no"
     depends_on:
       - mongodb
     ports:
@@ -30,7 +30,7 @@ services:
 
   web:
     image: app
-    restart: always
+    restart:  unless-stopped
     container_name: djangoapp
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
