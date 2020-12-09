@@ -1,0 +1,6 @@
+/.env
+mongo-data/*
+!mongo-data/*.gitkeep
+mongo-app/*
+!mongo-app/*.gitkeep
+/.idea/

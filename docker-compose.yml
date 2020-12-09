@@ -1,0 +1,84 @@
+version: '3.1'
+services:
+  mongodb:
+    image: mongo:3.4
+    restart: always
+    command: mongod --smallfiles
+    container_name: mongodb
+    volumes:
+      - ./mongo-data:/data/db
+      - ./mongo-app:/var/www/html
+    env_file:
+      - ./.env
+    ports:
+      - 27017:27017
+    networks:
+      mongo_net:
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongoexpressweb
+    restart: always
+    depends_on:
+      - mongodb
+    ports:
+      - 8081:8081
+    env_file:
+      - ./.env
+    networks:
+      mongo_net:
+
+  web:
+    image: app
+    restart: always
+    container_name: djangoapp
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/mentisparchment_docker
+    ports:
+      - 8000:8000
+    links:
+      - mongodb
+    depends_on:
+      - migration
+    env_file:
+      - ./.env
+    networks:
+      mongo_net:
+
+  migration:
+    build: .
+    image: app
+    command: python manage.py migrate
+    volumes:
+      - .:/mentisparchment_docker
+    links:
+      - mongodb
+    depends_on:
+      - make_migrations
+    env_file:
+      - ./.env
+    networks:
+      mongo_net:
+
+  make_migrations:
+    build: .
+    image: app
+    command: python manage.py makemigrations
+    volumes:
+      - .:/mentisparchment_docker
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+    env_file:
+      - ./.env
+    networks:
+      mongo_net:
+
+networks:
+  mongo_net:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.16.0.0/24

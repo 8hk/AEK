@@ -1,0 +1,6 @@
+django== 2.2.8
+# djongo==1.2.30
+djongo
+six
+mongoengine
+pymongo
