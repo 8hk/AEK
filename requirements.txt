@@ -1,0 +1,4 @@
+django
+djongo
+six
+django-environ
