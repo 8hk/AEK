@@ -4,3 +4,4 @@ mongo-data/*
 mongo-app/*
 !mongo-app/*.gitkeep
 /.idea/
+/venv/
