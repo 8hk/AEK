@@ -5,5 +5,7 @@ mongo-app/*
 !mongo-app/*.gitkeep
 /.idea/
 /venv/
-/api/search/migrations/
-/api/migrations/
+/api/search/migrations/*
+/api/migrations/*
+/OntologyRetriever/ontology_retriever.py
+/OntologyRetriever/*
