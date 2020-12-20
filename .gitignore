@@ -5,3 +5,5 @@ mongo-app/*
 !mongo-app/*.gitkeep
 /.idea/
 /venv/
+/api/search/migrations/
+/api/migrations/
