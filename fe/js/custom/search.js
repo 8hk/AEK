@@ -13,18 +13,21 @@ function addDimension() {
             console.log("New dimension id: dimensionContainerId", (id + 1));
 
             var newDimension = "\n" +
-                "        <div class=\"container-fluid search-bar\" id=\"dimensionContainerId" + (id + 1) + "\">\n" +
+                "        <div class=\"container-fluid form-group has-warning has-feedback dimension-bar\" id=\"dimensionContainerId" + (id + 1) + "\">\n" +
                 "            <!-- Search form -->\n" +
-                "            <div class=\"search-form input-group-sm mb-3\">\n" +
+                "            <div class=\"dimension-form input-group-sm mb-3\">\n" +
                 "                <!--<label for=\"dimension1\">Enter search terms... Tab for each term.</label>-->\n" +
                 "                <input class=\"form-control\" id=\"dimension" + (id + 1) + "\" type=\"text\" data-role=\"tagsinput\" placeholder=\"Enter search terms... Tab after each term.\" aria-label=\"Search\">\n" +
                 "            </div>\n" +
-                "            <!-- Remove dimension button -->\n" +
-                "            <div class=\"search-button text-center\">\n" +
-                "                <a class=\"btn btn-default btn-sm\" id=\"removeDimension" + (id + 1) + "Id\" onclick=\"removeDimension(dimensionContainerId" + (id + 1) + ")\">\n" +
-                "                    <span class=\"glyphicon glyphicon-minus\"></span> Remove dimension\n" +
-                "                </a>\n" +
-                "            </div>\n" +
+                "            <div class=\"remove-dimension-button\">\n" +
+                "                <!-- Remove dimension button -->\n" +
+                "                <div class=\"text-center\">\n" +
+                "                    <a class=\"btn btn-default btn-sm\" id=\"removeDimension" + (id + 1) + "Id\" onclick=\"removeDimension(dimensionContainerId" + (id + 1) + ")\">\n" +
+                "                        <span class=\"glyphicon glyphicon-minus\"></span> Remove dimension\n" +
+                "                    </a>\n" +
+                "                </div>\n" +
+                "                <label hidden class=\"control-label max-words-warning\" id=\"warningLabelId" + (id + 1) + "\" for=\"dimension" + (id + 1) + "\">Maximum 3 words per search term.</label>\n" +
+                "            </div>";
                 "        </div>";
             $("#dimensionsContainerId").append(newDimension);
 
@@ -41,6 +44,15 @@ function addDimension() {
                 if(searchTerm.split(' ').length > 3) {
                     console.log("Search terms should contain a maximum of 3 words.");
                     event.cancel = true;    // set to true in order to prevent the item from getting added
+                    var id = $(this).attr("id").split('_')[1];
+                    console.log("id: ", id);
+                    document.getElementById("warningLabelId_" + id).removeAttribute("hidden");
+                }
+                else
+                {
+                    var id = $(this).attr("id").split('_')[1];
+                    console.log("id: ", id);
+                    document.getElementById("warningLabelId_" + id).setAttribute("hidden", "hidden");
                 }
             });
 
