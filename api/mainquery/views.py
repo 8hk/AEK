@@ -1,16 +1,18 @@
 from django.shortcuts import render
 
+
 # Create your views here.
 
 class MainQuery(object):
 
     def __init__(self):
+        self.main_query = ""
         self.dimensions = []
 
     def add_dimension(self, dimension):
         self.dimensions.append(dimension)
 
-    def add_keyword(self, dimension,keyword):
+    def add_keyword(self, dimension, keyword):
         self.dimensions[dimension].append(keyword)
 
     def print_main_query(self):
@@ -27,4 +29,3 @@ class Dimension(object):
 
     def print_dimension(self):
         print(self.keywords)
-
