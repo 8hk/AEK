@@ -2,3 +2,4 @@ django
 djongo
 six
 django-environ
+django-json-ld

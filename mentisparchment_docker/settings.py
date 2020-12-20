@@ -50,6 +50,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'api',
+    'api.search',
+    'django_json_ld',
 ]
 
 MIDDLEWARE = [
@@ -137,3 +140,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+JSON_LD_DEFAULT_CONTEXT='http://www.w3.org/ns/anno.jsonld'
