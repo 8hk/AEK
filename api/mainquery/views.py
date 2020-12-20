@@ -5,8 +5,8 @@ from django.shortcuts import render
 
 class MainQuery(object):
 
-    def __init__(self):
-        self.main_query = ""
+    def __init__(self,main_query):
+        self.main_query = main_query
         self.dimensions = []
 
     def add_dimension(self, dimension):
@@ -17,7 +17,7 @@ class MainQuery(object):
 
     def print_main_query(self):
         for dimension in self.dimensions:
-            print(dimension.print_dimension() + "\n")
+            print(self.main_query+" "+dimension.print_dimension() + "\n")
 
 
 class Dimension(object):
