@@ -35,7 +35,7 @@ function addDimension() {
             // Also set the maximum number of characters within a search term as well.
             $('input[id^="dimension"]').tagsinput({
                 maxTags: 6,  // Maximum number of search terms within a dimension.
-                maxChars: 20    // Maximum number of characters within a search term.
+                maxChars: 100    // Maximum number of characters within a search term.
             });
 
             // Set the maximum number of words within a search term.
