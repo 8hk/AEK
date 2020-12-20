@@ -30,7 +30,7 @@
 }
 
 .dimension-bar .dimension-form {
-    width: 80%;
+    width: 85%;
 }
 
 .search-bar .search-form input.form-control[type=text]:focus:not([readonly]) {
@@ -43,8 +43,7 @@
 }
 
 .dimension-bar .remove-dimension-button {
-    width: 20%;
-    padding: 0px 14px;
+    width: 15%;
 }
 
 .bootstrap-tagsinput {
@@ -57,4 +56,5 @@
 
 .max-words-warning {
     font-size: small;
+    padding-left: 10px;
 }
