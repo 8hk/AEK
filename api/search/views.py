@@ -80,6 +80,7 @@ STATIC_JSON_2 = """
 
 STATIC_JSON_3 = """
 {
+    "main_query":"happiness",
     "dimensions":[
         {
                     "keywords": [
@@ -95,7 +96,6 @@ STATIC_JSON_3 = """
 }
 """
 
-
 def detail(request):
     dim = []
     helper = SearchHelper(dim)
@@ -107,12 +107,14 @@ class SearchHelper(object):
     dimensions = []
 
     def __init__(self, dimensions):
+        self.main_query=""
         self.dimensions = dimensions
         self.search_terms = []
 
     def get_annotations(self, keyword):
         json_str = json.loads(keyword)
         dimension_objs = []
+        self.main_query=json_str["main_query"]
         for dimension in json_str['dimensions']:
             dimension_obj = Dimension()
             for keyword in dimension['keywords']:
@@ -132,6 +134,8 @@ class SearchHelper(object):
     def start_keyword_pairing(self, dimension_number, current_index):
         # iterate for all keyword for each dimension
         for keyword in self.dimensions[current_index].keywords:
+            if len(self.main_query)>0:
+                keyword= self.main_query+" "+keyword
             self.search_terms.append(keyword)
             current_keyword_pairing = ""
             # other_dimension_index means the index from another dimensions
