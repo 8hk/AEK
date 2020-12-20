@@ -4,7 +4,7 @@ function addDimension() {
     // Allow for new dimension only if the "Add dimension" button is not disabled.
     if(document.getElementById("addDimensionsButtonId").getAttribute("disabled") == null) {
 
-        // Allow for new dimension only if the max dimensions limit will not be exceeded.
+        // Allow for new dimension only if the max dimensions limit (6) will not be exceeded.
         var numOfDimensions = $("#dimensionsContainerId").children().length;
         if(numOfDimensions < 6) {
 
@@ -28,13 +28,23 @@ function addDimension() {
                 "        </div>";
             $("#dimensionsContainerId").append(newDimension);
 
-
+            // Set the maxiumum number of search terms within a dimension.
+            // Also set the maximum number of characters within a search term as well.
             $('input[id^="dimension"]').tagsinput({
-                maxTags: 6,  // Maximum number of search terms within a dimension
-                maxChars: 20
+                maxTags: 6,  // Maximum number of search terms within a dimension.
+                maxChars: 20    // Maximum number of characters within a search term.
             });
 
-            // Disable "Add dimension" button.
+            // Set the maximum number of words within a search term.
+            $('input[id^="dimension"]').bind('beforeItemAdd', function(event) {
+                var searchTerm = event.item;    // search term
+                if(searchTerm.split(' ').length > 3) {
+                    console.log("Search terms should contain a maximum of 3 words.");
+                    event.cancel = true;    // set to true in order to prevent the item from getting added
+                }
+            });
+
+            // Disable "Add dimension" button when the number of dimensions reach 6.
             if (numOfDimensions + 1 == 6) {
                 console.log("max");
                 document.getElementById("addDimensionsButtonId").setAttribute("disabled", "disabled");
