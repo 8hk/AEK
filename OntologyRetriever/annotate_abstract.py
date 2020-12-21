@@ -23,7 +23,7 @@
 import ontology_retriever as onRe
 
 print("Retrieving all concepts in the following list of ontologies: ", onRe.list_of_bioportal_ontologies)
-concepts = onRe.retrieve_annotations("dde26f65-ec2b-49b4-b3e7-090e5da33350", max_page_limit=10)  
+concepts = onRe.retrieve_annotations("", max_page_limit=10)  
 
 
 # In[3]:
