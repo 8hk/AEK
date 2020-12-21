@@ -96,46 +96,61 @@ STATIC_JSON_3 = """
 }
 """
 
+
 def detail(request):
-    dim = []
-    helper = SearchHelper(dim)
-    resp = helper.get_annotations(STATIC_JSON_3)
+    search = Search(STATIC_JSON_3)
+    resp = search.search_annotated_articles()
     return HttpResponse("%s" % resp)
 
 
-class SearchHelper(object):
-    dimensions = []
+class Search(object):
+    query = ""
 
-    def __init__(self, dimensions):
+    def __init__(self, query):
+        self.query = query
+
+    def search_annotated_articles(self):
+        helper = SearchHelper(self.query)
+        terms = helper.create_search_terms()
+        articles = helper.get_annotations(terms)
+        return articles
+
+
+class SearchHelper(object):
+    def __init__(self, query):
+        self.query = query
         self.main_query=""
-        self.dimensions = dimensions
+        self.dimensions = []
         self.search_terms = []
 
-    def get_annotations(self, keyword):
-        json_str = json.loads(keyword)
+    def get_annotations(self, search_terms):
+        articles = {}
+        if len(self.search_terms) > 0:
+            for term in self.search_terms:
+                bodylist = AnnotatedArticle.objects.filter(body_value=term)
+                articles[term] = []
+                for body in bodylist:
+                    articles[term].append(body.target)
+            return articles
+
+    def create_search_terms(self):
+        json_str = json.loads(self.query)
         dimension_objs = []
-        self.main_query=json_str["main_query"]
+        self.main_query = json_str["main_query"]
         for dimension in json_str['dimensions']:
             dimension_obj = Dimension()
             for keyword in dimension['keywords']:
                 dimension_obj.add_keyword(keyword)
             dimension_objs.append(dimension_obj)
             self.dimensions.append(dimension_obj)
-        self.create_search_terms()
-        resp = {}
-        if len(self.search_terms) > 0:
-            for term in self.search_terms:
-                bodylist = AnnotatedArticle.objects.filter(body_value=term)
-                resp[term] = []
-                for body in bodylist:
-                    resp[term].append(body.target)
-        return resp
+        self.start_parsing()
+        return self.search_terms
 
     def start_keyword_pairing(self, dimension_number, current_index):
         # iterate for all keyword for each dimension
         for keyword in self.dimensions[current_index].keywords:
-            if len(self.main_query)>0:
-                keyword= self.main_query+" "+keyword
+            if len(self.main_query) > 0:
+                keyword = self.main_query + " " + keyword
             self.search_terms.append(keyword)
             current_keyword_pairing = ""
             # other_dimension_index means the index from another dimensions
@@ -172,7 +187,7 @@ class SearchHelper(object):
                                              other_dimension_keyword,
                                              other_dimension_index, index + 1)
 
-    def create_search_terms(self):
+    def start_parsing(self):
         dimension_number = len(self.dimensions)
         current_index = 0
         for i in range(dimension_number):
