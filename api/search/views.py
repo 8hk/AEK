@@ -23,7 +23,7 @@ from django.http import HttpResponse
 
 from api.mainquery.views import Dimension
 from api.search.models import AnnotatedArticle
-
+from django.template.response import TemplateResponse
 STATIC_JSON = """
 {
     "dimensions":[
@@ -96,12 +96,61 @@ STATIC_JSON_3 = """
 }
 """
 
+STATIC_SUMMARY_JSON="""
+{
+    "keyword_pairs":[
+        {
+            "value":"bipolar manic depressive",
+            "papers_number":1200,
+            "top_authors":["william","anthoniy","jack"],
+            "top_keywords":["one","two","three"],
+            "publication_year":[2020,2019,2018,2017],
+            "publication_year_values":[20,500,400,150]
+        },
+        {
+            "value":"bipolar",
+            "papers_number":350,
+            "top_authors":["william","anthoniy","jack"],
+            "top_keywords":["one","two","three"],
+            "publication_year":[2017,2016,2015,2014],
+            "publication_year_values":[20,80,100,150]
+        },
+        {
+            "value":"bipolar",
+            "papers_number":350,
+            "top_authors":["william","anthoniy","jack"],
+            "top_keywords":["one","two","three"],
+            "publication_year":[2017,2016,2015,2014],
+            "publication_year_values":[20,80,100,150]
+        },
+        {
+            "value":"bipolar",
+            "papers_number":350,
+            "top_authors":["william","anthoniy","jack"],
+            "top_keywords":["one","two","three"],
+            "publication_year":[2017,2016,2015,2014],
+            "publication_year_values":[20,80,100,150]
+        }
+        ,
+        {
+            "value":"bipolar",
+            "papers_number":350,
+            "top_authors":["william","anthoniy","jack"],
+            "top_keywords":["one","two","three"],
+            "publication_year":[2017,2016,2015,2014],
+            "publication_year_values":[20,80,100,150]
+        }
+    ]
+}
+"""
 
 def detail(request):
     search = Search(STATIC_JSON_3)
     resp = search.search_annotated_articles()
-    return HttpResponse("%s" % resp)
-
+    args = {}
+    args['mytext'] = STATIC_SUMMARY_JSON
+    # return HttpResponse("%s" % resp)
+    return TemplateResponse(request, 'html/summary-page.html', args)
 
 class Search(object):
     query = ""
