@@ -9,3 +9,7 @@ mongo-app/*
 /api/migrations/*
 /OntologyRetriever/ontology_retriever.py
 /OntologyRetriever/*
+/node_modules/
+/google-chrome-stable_current_amd64.deb
+/npm-debug.log
+/package.json
