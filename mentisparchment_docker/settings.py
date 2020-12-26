@@ -92,7 +92,7 @@ DATABASES = {
         'ENFORCE_SCHEMA': True,
         'NAME': os.environ.get("MONGODB_DATABASE", "mentisparchment_docker"),
         'CLIENT':{
-            'host': os.environ.get("MONGO_DB_HOST", "172.16.0.2"),
+            'host': os.environ.get("MONGO_DB_HOST", "mongodb"),
             'port': int(os.environ.get("MONGO_DB_PORT", 27017)),
             'username': os.environ.get("MONGO_DB_USERNAME", 'root'),
             'password': os.environ.get("MONGO_DB_PASSWORD", 'mongoadmin'),
