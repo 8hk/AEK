@@ -30,12 +30,14 @@ db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
 # import ontology_retriever as onRe
 # print("Retrieving all concepts in the following list of ontologies: ", onRe.list_of_bioportal_ontologies)
 # concepts = onRe.retrieve_annotations(API_KEY, max_page_limit=10)
-infile = open('concepts', 'rb')
+infile = open('concepts.pickle', 'rb')
 concepts = pickle.load(infile)
 infile.close()
 
-search_keyword = "bipolar disorder"
-number_of_article = 3
+search_keywords = ["bipolar disorder", "manic depression", "bipolar", "manic depression disorder"]
+number_of_article = 50
+
+annotation_list = []
 
 
 class Article:
@@ -152,7 +154,7 @@ def get_abstract_text(unparsed_abstract_text):
 
 
 def annotate(retrieved_article_ids):
-    annotation_list = []
+    annotated_article_ids = []
     annotation_counter = 0
     if len(retrieved_article_ids) > 0:
         for id in range(0, len(retrieved_article_ids)):
@@ -163,18 +165,25 @@ def annotate(retrieved_article_ids):
             # print(article.abstract)
             for c in concepts:
                 positions = get_index_positions(article.abstract, c.pref_label)
-                if positions != []:
+                if positions:
                     for position in positions:
-                        print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(
-                            position['start']) + " POSITION END:" + str(position['end']) + "\n")
+                        # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
                         # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
                         annotation_object = create_annotation_object(annotation_counter, article, c, position)
+                        if article.pm_id not in annotated_article_ids:
+                            annotated_article_ids.append(article.pm_id)
                         print(annotation_object)
                         annotation_counter = annotation_counter + 1
                         annotation_list.append(annotation_object)
                     print("\n--------------------------------------------")
-    return annotation_list
+    return convert_to_json_abjects(annotated_article_ids)
 
+
+def convert_to_json_abjects(annotated_article_ids):
+    annotated_article_ids_json = []
+    for i in annotated_article_ids:
+        annotated_article_ids_json.append({'id': i})
+    return annotated_article_ids_json
 
 def get_index_positions(abstract, element):
     abstract = abstract.lower()
@@ -202,7 +211,10 @@ def create_annotation_object(id, article, concept, position):
             {
                 "type": "TextualBody",
                 "source": concept.id,
-                "value": concept.synonyms
+                "value": {
+                    "id": concept.pref_label,
+                    "value": concept.synonyms
+                }
             }
         ],
         "target": {
@@ -216,17 +228,23 @@ def create_annotation_object(id, article, concept, position):
     }
 
 
-def write_annotation_to_database(annotation_list):
-    for annotation in annotation_list:
-        print(annotation)
-        db.annotation.insert_one(annotation)
+def write_to_database(list, collection):
+    col=db[collection]
+    for item in list:
+        col.insert_one(item)
 
 
 if __name__ == "__main__":
-    print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keyword)
+    print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
 
-    retrieved_article_ids = retrieve_article_ids(search_keyword, number_of_article)
+    retrieved_article_ids = []
+    for search_keyword in search_keywords:
+        ids = retrieve_article_ids(search_keyword, number_of_article)
+        for i in ids:
+            if i not in retrieved_article_ids:
+                retrieved_article_ids.append(i)
 
-    annotation_list = annotate(retrieved_article_ids)
+    annotated_article_ids = annotate(retrieved_article_ids)
 
-    write_annotation_to_database(annotation_list)
+    write_to_database(annotation_list, "annotation")
+    write_to_database(annotated_article_ids, "annotated_article_ids")
