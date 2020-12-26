@@ -17,8 +17,13 @@ from django.contrib import admin
 from django.urls import path
 
 from api.search import views
-
+from django.conf import settings
+import os
+from django.views.static import serve as staticserve
+from django.conf.urls.static import static
 urlpatterns = [
+    path(r'^static/(?P<path>.*)$', staticserve),
     path('admin/', admin.site.urls),
-    path('search/', views.detail, name='detail'),
-]
+    path('search/', views.detail, name='detail')
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+

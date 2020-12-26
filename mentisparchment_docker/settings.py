@@ -54,6 +54,15 @@ INSTALLED_APPS = [
     'api.search',
     'django_json_ld',
 ]
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'fe/css'),  # this is for
+    os.path.join(BASE_DIR, 'fe/css/custom'),  # this is for
+    os.path.join(BASE_DIR, "fe/js"),  # this is for
+    os.path.join(BASE_DIR, "fe/js/custom"),  # this is for
+    os.path.join(BASE_DIR, "fe/js/chart.js-2.9.4"),  # this is for
+    os.path.join(BASE_DIR, "fe/js/chart.js-2.9.4/package/dist"),  # this is for
+    os.path.join(BASE_DIR, "fe/html"),  # this is for
+)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -70,7 +79,7 @@ ROOT_URLCONF = os.environ.get("DJANGO_ROOT_URL", "mentisparchment_docker.urls")
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,"fe")],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
