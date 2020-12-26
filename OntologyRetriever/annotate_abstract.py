@@ -17,6 +17,12 @@ import re
 import pickle
 import os
 from pymongo import MongoClient
+import sys
+from concurrent.futures import ThreadPoolExecutor
+import threading
+from datetime import datetime
+import concurrent
+lock = threading.Lock()
 
 client = MongoClient(
     host=os.environ.get("MONGO_DB_HOST", " ") + ":" + os.environ.get("MONGO_DB_PORT", " "),  # <-- IP and port go here
@@ -94,16 +100,21 @@ class EntrezGetArticleRequest:
 
 
 def retrieve_article_ids(search_term, max_article_limit):
-    response = requests.get(EntrezSearchRequest(search_term, max_article_limit))
+    try:
+        response = requests.get(EntrezSearchRequest(search_term, max_article_limit))
 
-    if response.ok:
-        xpars = xmltodict.parse(response.text)
-        article_count = xpars['eSearchResult']['Count']
-        returned_article_id_count = int(xpars['eSearchResult']['RetMax'])
-        print("From " + article_count + " articles " + str(returned_article_id_count) + " article ids are retrieved")
-        return xpars['eSearchResult']['IdList']['Id']
-    else:
-        print("\tThis article id could not be retrieved.")
+        if response.ok:
+            xpars = xmltodict.parse(response.text)
+            article_count = xpars['eSearchResult']['Count']
+            returned_article_id_count = int(xpars['eSearchResult']['RetMax'])
+            print("From " + article_count + " articles " + str(
+                returned_article_id_count) + " article ids are retrieved")
+            return xpars['eSearchResult']['IdList']['Id']
+        else:
+            print("\tThis article id could not be retrieved.")
+    except:
+        print("something related with ", sys.exc_info()[0]," definitely happened")
+
 
 
 def get_abstract_of_given_article_id(article_id):
@@ -118,15 +129,18 @@ def get_abstract_of_given_article_id(article_id):
 def retrieve_article(article_id):
     response = requests.get(EntrezGetArticleRequest(article_id))
     if response.ok:
-        xpars = xmltodict.parse(response.text)
-        article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
-        article_title = article["ArticleTitle"]
-        journal_issn = article["Journal"]["ISSN"]["#text"]
-        journal_name = article["Journal"]["Title"]
-        pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
-        abstract = article["Abstract"]["AbstractText"]
+       try:
+           xpars = xmltodict.parse(response.text)
+           article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
+           article_title = article["ArticleTitle"]
+           journal_issn = article["Journal"]["ISSN"]["#text"]
+           journal_name = article["Journal"]["Title"]
+           pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
+           abstract = article["Abstract"]["AbstractText"]
 
-        return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
+           return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
+       except:
+           print("Oops!", sys.exc_info()[0], "occurred for article id: ",article_id)
     else:
         print("\tArticle could not be retrieved.")
 
@@ -158,24 +172,33 @@ def annotate(retrieved_article_ids):
     annotation_counter = 0
     if len(retrieved_article_ids) > 0:
         for id in range(0, len(retrieved_article_ids)):
-            print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
-            article = retrieve_article(retrieved_article_ids[id])
-            article.abstract = get_abstract_text(article.abstract)
-            # print(str(id)+"\n")
-            # print(article.abstract)
-            for c in concepts:
-                positions = get_index_positions(article.abstract, c.pref_label)
-                if positions:
-                    for position in positions:
-                        # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
-                        # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
-                        annotation_object = create_annotation_object(annotation_counter, article, c, position)
-                        if article.pm_id not in annotated_article_ids:
-                            annotated_article_ids.append(article.pm_id)
-                        print(annotation_object)
-                        annotation_counter = annotation_counter + 1
-                        annotation_list.append(annotation_object)
-                    print("\n--------------------------------------------")
+            try:
+                lock.acquire()
+                print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
+                article = retrieve_article(retrieved_article_ids[id])
+                article.abstract = get_abstract_text(article.abstract)
+                # print(str(id)+"\n")
+                # print(article.abstract)
+                for c in concepts:
+                    positions = get_index_positions(article.abstract, c.pref_label)
+                    if positions:
+                        for position in positions:
+                            # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
+                            # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
+                            annotation_object = create_annotation_object(annotation_counter, article, c, position)
+                            if article.pm_id not in annotated_article_ids:
+                                annotated_article_ids.append(article.pm_id)
+                            # print(annotation_object)
+                            annotation_counter = annotation_counter + 1
+                            annotation_list.append(annotation_object)
+                            if len(annotation_list)>0:
+                                write_annotation_to_database(annotation_list)
+                        print("\n--------------------------------------------")
+
+            except:
+                print("Oops!", sys.exc_info()[0], "occurred.")
+            finally:
+                lock.release()
     return convert_to_json_abjects(annotated_article_ids)
 
 
@@ -233,10 +256,19 @@ def write_to_database(list, collection):
     for item in list:
         col.insert_one(item)
 
+def write_annotation_to_database(list):
+    col=db["annotation"]
+    while len(list)>0:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+            future = executor.submit(col.insert_one, list.pop())
+            result_ = future.result()
+
+
 
 if __name__ == "__main__":
+    now = datetime.now()
+    start_time = now.strftime("%H:%M:%S")
     print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
-
     retrieved_article_ids = []
     for search_keyword in search_keywords:
         ids = retrieve_article_ids(search_keyword, number_of_article)
@@ -244,7 +276,14 @@ if __name__ == "__main__":
             if i not in retrieved_article_ids:
                 retrieved_article_ids.append(i)
 
-    annotated_article_ids = annotate(retrieved_article_ids)
+    annotated_article_ids = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+        future = executor.submit(annotate,retrieved_article_ids)
+        annotated_article_ids = future.result()
 
-    write_to_database(annotation_list, "annotation")
+    write_annotation_to_database(annotation_list)
     write_to_database(annotated_article_ids, "annotated_article_ids")
+    now = datetime.now()
+    finish_time = now.strftime("%H:%M:%S")
+    print("start time: ",start_time)
+    print("finish time: ",finish_time)
