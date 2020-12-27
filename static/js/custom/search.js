@@ -77,3 +77,65 @@ function removeDimension(dimensionId) {
     // Enable "Add dimension" button.
     document.getElementById("addDimensionsButtonId").removeAttribute("disabled");
 }
+
+function requestSearch() {
+    console.log("Search requested.");
+
+    var dimensions_str = '{"dimensions":[';
+    var dimensions = $("#dimensionsContainerId").children();
+    for(var i=0; i < dimensions.length; i ++) {
+        console.log(dimensions[i]);
+        var id = dimensions[i].getAttribute("id");
+        console.log(id);
+        //console.log($("#" + id).find($(".bootstrap-tagsinput")));
+        /*var tags = $("#" + id).find($(".bootstrap-tagsinput").children());
+        console.log("num of tags: ", tags.length);
+        for(var j=0; j < tags.length; j ++) {
+            console.log(tags[j]);
+        }*/
+        dimensions_str += '{"keywords": [';
+        dimension_str = "";
+        var tags = $("#" + id).find(".bootstrap-tagsinput").each(function() {
+            $(this).children("span").each(function() {
+                console.log($(this).text());
+                if(dimension_str != "") {
+                    dimension_str += ",";
+                }
+                dimension_str = dimension_str + '\"' + $(this).text() + '\"';
+            });
+        });
+        dimensions_str += dimension_str;
+        dimensions_str += ']}';
+        if(i + 1 < dimensions.length) {
+            dimensions_str += ',';
+        }
+        //console.log($("#" + id).find($(".tag .label .label-info")));
+        //dimensions[i].children(".dimension-form")[0];
+    }
+    dimensions_str += ']}';
+    console.log("dim data: ", dimensions_str);
+
+    var serializedData = {  // Data for POST request.
+        main_query: $('#mainQueryId').val(),    // Main query
+        //dimension1: "lol",    // Dimension 1
+        //dimensions: '{"dimensions":[{"keywords": ["body", "image"]}, {"keywords": ["mri", "magnetic resonance imaging"]}]}'
+        dimensions: dimensions_str
+    };
+    console.log("Post data: " + serializedData);
+
+    $.ajax({
+        url: "/search",
+        type: "post",
+        data: serializedData,
+        cache: 'false',
+        //async: 'true',
+
+        success: function (response) {   // Successful at adding a relation.
+            console.log("Search request is successful.");
+            console.log(response);
+        },
+        error: function (response) {
+            console.log("Search request is unsuccessful.");
+        }
+    });
+}

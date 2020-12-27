@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 # desired operation below
@@ -95,30 +96,35 @@ STATIC_JSON_3 = """
 }
 """
 
-
+@csrf_exempt
 def detail(request):
-    dim = []
-    helper = SearchHelper(dim)
-    resp = helper.get_annotations(STATIC_JSON_3)
-    return HttpResponse("%s" % resp)
+    if request.method == "POST":
+        print("post")
+        main_query = request.POST.get("main_query")
+        dimensions = request.POST.get("dimensions")
+        print("main: ", main_query)
+        print("dimensions: ", dimensions)
+        dimensions_json = json.loads(dimensions)["dimensions"]
+        helper = SearchHelper()
+        resp = helper.get_annotations(dimensions_json)
+        return HttpResponse("%s" % resp)
 
 
 class SearchHelper(object):
-    dimensions = []
-
-    def __init__(self, dimensions):
-        self.dimensions = dimensions
+    def __init__(self):
+        self.dimensions = []
         self.search_terms = []
 
-    def get_annotations(self, keyword):
-        json_str = json.loads(keyword)
+    def get_annotations(self, dimensions):
         dimension_objs = []
-        for dimension in json_str['dimensions']:
+        print(dimensions)
+        for dimension in dimensions:
             dimension_obj = Dimension()
             for keyword in dimension['keywords']:
                 dimension_obj.add_keyword(keyword)
             dimension_objs.append(dimension_obj)
             self.dimensions.append(dimension_obj)
+        print(dimensions)
         self.create_search_terms()
         resp = {}
         if len(self.search_terms) > 0:
@@ -174,3 +180,7 @@ class SearchHelper(object):
         for i in range(dimension_number):
             self.start_keyword_pairing(dimension_number, i)
         print(self.search_terms)
+
+
+def page(request):
+    return render(request, 'html/index.html')
