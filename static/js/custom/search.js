@@ -77,3 +77,54 @@ function removeDimension(dimensionId) {
     // Enable "Add dimension" button.
     document.getElementById("addDimensionsButtonId").removeAttribute("disabled");
 }
+
+function requestSearch() {
+    console.log("Search requested.");
+
+    // Extract dimensions from input and serialize.
+    var dimensions_str = '{"dimensions":[';
+    var dimensions = $("#dimensionsContainerId").children();
+    for(var i=0; i < dimensions.length; i ++) {
+        console.log(dimensions[i]);
+        var id = dimensions[i].getAttribute("id");
+        dimensions_str += '{"keywords": [';
+        dimension_str = "";
+        var tags = $("#" + id).find(".bootstrap-tagsinput").each(function() {
+            $(this).children("span").each(function() {
+                console.log($(this).text());
+                if(dimension_str != "") {
+                    dimension_str += ",";
+                }
+                dimension_str = dimension_str + '\"' + $(this).text() + '\"';
+            });
+        });
+        dimensions_str += dimension_str;
+        dimensions_str += ']}';
+        if(i + 1 < dimensions.length) {
+            dimensions_str += ',';
+        }
+    }
+    dimensions_str += ']}';
+    console.log("dim data: ", dimensions_str);
+
+    var serializedData = {  // Data for POST request.
+        main_query: $('#mainQueryId').val(),    // Main query
+        dimensions: dimensions_str
+    };
+    console.log("Post data: " + serializedData);
+
+    $.ajax({
+        url: "/search",
+        type: "post",
+        data: serializedData,
+        cache: 'false',
+
+        success: function (response) {   // Successful at adding a relation.
+            console.log("Search request is successful.");
+            console.log(response);
+        },
+        error: function (response) {
+            console.log("Search request is unsuccessful.");
+        }
+    });
+}
