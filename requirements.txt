@@ -3,3 +3,6 @@ djongo
 six
 django-environ
 django-json-ld
+requests
+nltk
+xmltodict
