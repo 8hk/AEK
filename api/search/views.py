@@ -81,6 +81,7 @@ STATIC_JSON_2 = """
 
 STATIC_JSON_3 = """
 {
+    "main_query":"happiness",
     "dimensions":[
         {
                     "keywords": [
@@ -105,40 +106,58 @@ def detail(request):
         print("main: ", main_query)
         print("dimensions: ", dimensions)
         dimensions_json = json.loads(dimensions)["dimensions"]
-        helper = SearchHelper()
-        resp = helper.get_annotations(dimensions_json)
+
+        resp = Search.search_annotated_articles(main_query, dimensions_json)
         return HttpResponse("%s" % resp)
 
 
-class SearchHelper(object):
-    def __init__(self):
-        self.dimensions = []
-        self.search_terms = []
+class Search:
+    @staticmethod
+    def search_annotated_articles(main_query, dimensions_json):
+        helper = SearchHelper(main_query)
+        helper.create_search_combinations(dimensions_json)
+        articles = helper.get_annotations()
+        del helper
+        return articles
 
-    def get_annotations(self, dimensions):
-        dimension_objs = []
-        print(dimensions)
-        for dimension in dimensions:
+
+class SearchHelper(object):
+    def __init__(self, main_query):
+        self.main_query = main_query
+        self.dimensions = []
+        self.combinations = []
+
+    def get_annotations(self):
+        articles = {}
+        if len(self.combinations) > 0:
+            for combination in self.combinations:
+                bodylist = AnnotatedArticle.objects.filter(body_value=combination)
+                articles[combination] = []
+                for body in bodylist:
+                    articles[combination].append(body.target)
+            return articles
+
+    def create_search_combinations(self, dimensions_json):
+        for dimension in dimensions_json:
             dimension_obj = Dimension()
             for keyword in dimension['keywords']:
                 dimension_obj.add_keyword(keyword)
-            dimension_objs.append(dimension_obj)
             self.dimensions.append(dimension_obj)
-        print(dimensions)
-        self.create_search_terms()
-        resp = {}
-        if len(self.search_terms) > 0:
-            for term in self.search_terms:
-                bodylist = AnnotatedArticle.objects.filter(body_value=term)
-                resp[term] = []
-                for body in bodylist:
-                    resp[term].append(body.target)
-        return resp
+        self.start_parsing()
+
+    def start_parsing(self):
+        dimension_number = len(self.dimensions)
+        for i in range(dimension_number):
+            self.start_keyword_pairing(dimension_number, i)
+        self.combinations.append(self.main_query)
+        print("All search combinations: ", self.combinations)
 
     def start_keyword_pairing(self, dimension_number, current_index):
         # iterate for all keyword for each dimension
         for keyword in self.dimensions[current_index].keywords:
-            self.search_terms.append(keyword)
+            if len(self.main_query) > 0:
+                keyword = self.main_query + " " + keyword
+            self.combinations.append(keyword)
             current_keyword_pairing = ""
             # other_dimension_index means the index from another dimensions
             for other_dimension_index in range(dimension_number):
@@ -152,7 +171,7 @@ class SearchHelper(object):
                         # check it is last element
                         if current_index != dimension_number - 1:
                             current_keyword_pairing = keyword + " " + other_dimension_keyword
-                            self.search_terms.append(current_keyword_pairing)
+                            self.combinations.append(current_keyword_pairing)
                             # iterate through 6th dimension!
                             self.iterate_keyword_pairing(current_keyword_pairing, dimension_number, current_index,
                                                          keyword,
@@ -163,23 +182,15 @@ class SearchHelper(object):
                                 other_dimension_keyword,
                                 other_dimension_index,
                                 index):
-        new_keyword_pairing = ""
         # 6th dimension hardcoded!
         if other_dimension_index != dimension_number - index and index != 6:
             for next_keyword in self.dimensions[other_dimension_index + index].keywords:
                 new_keyword_pairing = current_keyword_pairing + " " + next_keyword
-                self.search_terms.append(new_keyword_pairing)
+                self.combinations.append(new_keyword_pairing)
                 # new_keyword_pairing becomes another inside str
                 self.iterate_keyword_pairing(new_keyword_pairing, dimension_number, current_index, keyword,
                                              other_dimension_keyword,
                                              other_dimension_index, index + 1)
-
-    def create_search_terms(self):
-        dimension_number = len(self.dimensions)
-        current_index = 0
-        for i in range(dimension_number):
-            self.start_keyword_pairing(dimension_number, i)
-        print(self.search_terms)
 
 
 def page(request):
