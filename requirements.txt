@@ -5,4 +5,5 @@ django-environ
 django-json-ld
 pymongo
 requests
+nltk
 xmltodict

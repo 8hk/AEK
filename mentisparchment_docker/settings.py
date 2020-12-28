@@ -54,6 +54,15 @@ INSTALLED_APPS = [
     'api.search',
     'django_json_ld',
 ]
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'fe/css'),  # this is for
+    os.path.join(BASE_DIR, 'fe/css/custom'),  # this is for
+    os.path.join(BASE_DIR, "fe/js"),  # this is for
+    os.path.join(BASE_DIR, "fe/js/custom"),  # this is for
+    os.path.join(BASE_DIR, "fe/js/chart.js-2.9.4"),  # this is for
+    os.path.join(BASE_DIR, "fe/js/chart.js-2.9.4/package/dist"),  # this is for
+    os.path.join(BASE_DIR, "fe/html"),  # this is for
+)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -92,7 +101,7 @@ DATABASES = {
         'ENFORCE_SCHEMA': True,
         'NAME': os.environ.get("MONGODB_DATABASE", "mentisparchment_docker"),
         'CLIENT':{
-            'host': os.environ.get("MONGO_DB_HOST", "172.16.0.2"),
+            'host': os.environ.get("MONGO_DB_HOST", "mongodb"),
             'port': int(os.environ.get("MONGO_DB_PORT", 27017)),
             'username': os.environ.get("MONGO_DB_USERNAME", 'root'),
             'password': os.environ.get("MONGO_DB_PASSWORD", 'mongoadmin'),
