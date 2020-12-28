@@ -1,3 +1,5 @@
+{% load static %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,14 +14,14 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
     <!-- Bootstrap Tags Input Plugin -->
-    <link rel="stylesheet" href="../css/bootstrap-tagsinput.css">
-    <script src="../js/bootstrap-tagsinput.js"></script>
+    <link rel="stylesheet" href="{% static 'css/bootstrap-tagsinput.css' %}">
+    <script src="{% static 'js/bootstrap-tagsinput.js' %}"></script>
 
     <!-- Custom scripts -->
-    <script src="../js/custom/search.js"></script>
+    <script src="{% static 'js/custom/search.js' %}"></script>
 
     <!-- Custom stylesheets -->
-    <link rel="stylesheet" href="../css/custom/search.css">
+    <link rel="stylesheet" href="{% static 'css/custom/search.css' %}">
 </head>
 <body>
     <!-- Search header -->
@@ -31,11 +33,11 @@
     <div class="container-fluid search-bar">
         <!-- Search form -->
         <div class="search-form input-group-sm mb-3">
-            <input class="form-control" type="text" maxlength="100" placeholder="Enter a query..." aria-label="Search">
+            <input class="form-control" id="mainQueryId" type="text" maxlength="100" placeholder="Enter a query..." aria-label="Search">
         </div>
         <!-- Search button -->
         <div class="search-button text-center">
-            <a href="#" class="btn btn-default btn-sm">
+            <a href="#" class="btn btn-default btn-sm" onclick="requestSearch()">
                 <span class="glyphicon glyphicon-search"></span> Search
             </a>
         </div>
@@ -57,3 +59,4 @@
 
 </body>
 </html>
+{% endblock %}

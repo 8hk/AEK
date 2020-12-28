@@ -158,24 +158,18 @@ STATIC_SUMMARY_JSON = """
 }
 """
 
-
 @csrf_exempt
 def detail(request):
-    # if request.method == "POST":
-    #     print("post")
-    #     main_query = request.POST.get("main_query")
-    #     dimensions = request.POST.get("dimensions")
-    #     print("main: ", main_query)
-    #     print("dimensions: ", dimensions)
-    #     dimensions_json = json.loads(dimensions)["dimensions"]
-    #
-    #     resp = Search.search_annotated_articles(main_query, dimensions_json)
-    #     return HttpResponse("%s" % resp)
+    if request.method == "POST":
+        print("post")
+        main_query = request.POST.get("main_query")
+        dimensions = request.POST.get("dimensions")
+        print("main: ", main_query)
+        print("dimensions: ", dimensions)
+        dimensions_json = json.loads(dimensions)["dimensions"]
 
-
-    args = {}
-    args['mytext'] = STATIC_SUMMARY_JSON
-    return TemplateResponse(request, 'html/summary-page.html', args)
+        resp = Search.search_annotated_articles(main_query, dimensions_json)
+        return HttpResponse("%s" % resp)
 
 
 
@@ -195,7 +189,7 @@ class SearchHelper(object):
     db = ""
     column = ""
     articles = []
-
+    
     def __init__(self, main_query):
         self.main_query = main_query
         self.dimensions = []
@@ -242,6 +236,17 @@ class SearchHelper(object):
         for search_result in search_result_list:
             response+=search_result.generate_json_value()
         return response
+
+    def get_annotations(self):
+        articles = {}
+        if len(self.combinations) > 0:
+            for combination in self.combinations:
+                bodylist = AnnotatedArticle.objects.filter(body_value=combination)
+                articles[combination] = []
+                for body in bodylist:
+                    articles[combination].append(body.target)
+            return articles
+
 
     def create_search_combinations(self, dimensions_json):
         for dimension in dimensions_json:
@@ -297,6 +302,7 @@ class SearchHelper(object):
                 self.iterate_keyword_pairing(new_keyword_pairing, dimension_number, current_index, keyword,
                                              other_dimension_keyword,
                                              other_dimension_index, index + 1)
+
 
     # we dont need to retrieve all retrieve for each key again and again. instead we will use this list while
     # retrieving the articles
@@ -642,3 +648,6 @@ class EntrezGetArticleRequest:
     def __str__(self):
         return self.base_url + "efetch.fcgi?db=pubmed&id=" + self.article_id + "&retmode=xml"
 
+
+def page(request):
+    return render(request, 'html/index.html')
