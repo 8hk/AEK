@@ -131,45 +131,28 @@ STATIC_SUMMARY_JSON = """
 {
     "keyword_pairs":[
         {
-            "value":"bipolar manic depressive",
+            "value":"bipolar disorder",
             "papers_number":1200,
-            "top_authors":["william","anthoniy","jack"],
-            "top_keywords":["one","two","three"],
+            "top_authors":["William Anot","John Doe","Jack Spar"],
+            "top_keywords":["attention ","autism","spectrum"],
             "publication_year":[2020,2019,2018,2017,2003,1992],
             "publication_year_values":[20,500,400,150,50,200]
         },
         {
-            "value":"bipolar",
-            "papers_number":350,
-            "top_authors":["william","anthoniy","jack"],
-            "top_keywords":["one","two","three"],
+            "value":"manic depressive",
+            "papers_number":1350,
+            "top_authors":["Adam Rot","Sarah Lats","Abbie Dur"],
+            "top_keywords":["suicidal","disorder","behavior"],
             "publication_year":[2017,2016,2015,2014],
-            "publication_year_values":[20,80,100,150]
+            "publication_year_values":[200,800,1000,1500]
         },
         {
-            "value":"bipolar",
+            "value":"bipolar disorder-manic depressive" ,
             "papers_number":350,
-            "top_authors":["william","anthoniy","jack"],
-            "top_keywords":["one","two","three"],
+            "top_authors":["Adele Codre","Niche Dur","Agatha Cirs"],
+            "top_keywords":["disease","circadian","hallucination"],
             "publication_year":[2017,2016,2015,2014],
-            "publication_year_values":[20,80,100,150]
-        },
-        {
-            "value":"bipolar",
-            "papers_number":350,
-            "top_authors":["william","anthoniy","jack"],
-            "top_keywords":["one","two","three"],
-            "publication_year":[2017,2016,2015,2014],
-            "publication_year_values":[20,80,100,150]
-        }
-        ,
-        {
-            "value":"bipolar",
-            "papers_number":350,
-            "top_authors":["william","anthoniy","jack"],
-            "top_keywords":["one","two","three"],
-            "publication_year":[2017,2016,2015,2014],
-            "publication_year_values":[20,80,100,150]
+            "publication_year_values":[600,800,300,450]
         }
     ]
 }
@@ -189,53 +172,11 @@ def detail(request):
     #     resp = Search.search_annotated_articles(main_query, dimensions_json)
     #     return HttpResponse("%s" % resp)
 
-    req = json.loads(STATIC_JSON_3)
-    main_query = req["main_query"]
-    dimensions = req["dimensions"]
-    print("main: ", main_query)
-    print("dimensions: ", dimensions)
-    # dimensions_json = json.dumps(dimensions)["dimensions"]
 
-    resp = Search.search_annotated_articles(main_query, req["dimensions"])
-    # search = Search(STATIC_JSON_3)
-    # resp = search.search_annotated_articles()
-    # basic_search()
     args = {}
-    args['mytext'] = resp
-    # return HttpResponse("%s" % resp)
+    args['mytext'] = STATIC_SUMMARY_JSON
     return TemplateResponse(request, 'html/summary-page.html', args)
 
-
-def basic_search():
-    myclient = MongoClient(
-        host='mongodb:27017',  # <-- IP and port go here
-        serverSelectionTimeoutMS=3000,  # 3 second timeout
-        username='root',
-        password='mongoadmin',
-    )
-    mydb = myclient["mentisparchment_docker"]
-    mycol = mydb["annotation"]
-
-    myquery = {"body": [
-        {
-            "value": {
-                "id": "function"
-            }
-        }]}
-    key = "TextualBody"
-    myquery2 = {}
-    myquery2["body.type"] = key
-    mydoc = mycol.find(myquery2)
-    # print("doc size: ",len(mydoc))
-    total_list = []
-    for x in mydoc:
-        # print("Python MongoDB Query")
-        list_item = dict(x)
-        # print(list_item["body"][0]["value"]["id"])
-        if list_item["body"][0]["value"]["id"] not in total_list:
-            total_list.append(list_item["body"][0]["value"]["id"])
-    print(total_list)
-    print(len(total_list))
 
 
 class Search:
@@ -271,24 +212,6 @@ class SearchHelper(object):
         self.db = self.mongo_client["mentisparchment_docker"]
         self.column = self.db["annotation"]
 
-    def get_article_ids(self, combination):
-        query = {}
-        query["body.value.id"] = combination
-        document = self.column.find(query)
-        article_id_list = []
-        for x in document:
-            list_item = dict(x)
-            if list_item["target"]["id"] not in article_id_list:
-                article_id_list.append(list_item["target"]["id"])
-        return article_id_list
-
-    def get_article_details(self, article_list):
-        for article_id in article_list:
-            article = Article.retrieve_article(article_id)
-            article.abstract = article.get_abstract_text(article.abstract)
-            # article.get_top_keywords()
-            self.articles.append(article)
-
     def get_annotations(self):
         articles_by_term = {}
         search_result_list=[]
@@ -319,28 +242,6 @@ class SearchHelper(object):
         for search_result in search_result_list:
             response+=search_result.generate_json_value()
         return response
-
-        # return common_article_list
-
-        # TODO
-        # parse all common_article_list
-        # parse keyword
-        # parse author
-        # parse other things and return as json
-
-        #     bodylist = AnnotatedArticle.objects.filter(body_value=combination)
-        #     articles[combination] = []
-        #     for body in bodylist:
-        #         articles[combination].append(body.target)
-        # return articles
-
-    # we dont need to retrieve all retrieve for each key again and again. instead we will use this list while
-    # retrieving the articles
-    def create_search_keys(self):
-        self.all_terms.append(self.main_query)
-        for dimension_line in self.dimensions:
-            for keyword in dimension_line.keywords:
-                self.all_terms.append(keyword)
 
     def create_search_combinations(self, dimensions_json):
         for dimension in dimensions_json:
@@ -397,11 +298,38 @@ class SearchHelper(object):
                                              other_dimension_keyword,
                                              other_dimension_index, index + 1)
 
+    # we dont need to retrieve all retrieve for each key again and again. instead we will use this list while
+    # retrieving the articles
+    def create_search_keys(self):
+        self.all_terms.append(self.main_query)
+        for dimension_line in self.dimensions:
+            for keyword in dimension_line.keywords:
+                self.all_terms.append(keyword)
+
+    #takes article details from mongodb with its keyword
+    def get_article_ids(self, combination):
+        query = {}
+        query["body.value.id"] = combination
+        document = self.column.find(query)
+        article_id_list = []
+        for x in document:
+            list_item = dict(x)
+            if list_item["target"]["id"] not in article_id_list:
+                article_id_list.append(list_item["target"]["id"])
+        return article_id_list
+
+    #collects the details of articles
+    def get_article_details(self, article_list):
+        for article_id in article_list:
+            article = Article.retrieve_article(article_id)
+            article.abstract = article.get_abstract_text(article.abstract)
+            # article.get_top_keywords()
+            self.articles.append(article)
 
 def page(request):
     return render(request, 'html/index.html')
 
-
+#it is similar class with annotate_abstract
 class Article:
     pm_id = ""
     title = ""
@@ -426,6 +354,7 @@ class Article:
         self.instutation_list = instutation_list
         self.article_date = article_date
 
+    #fetch article from entrez
     @staticmethod
     def retrieve_article(article_id):
         response = requests.get(EntrezGetArticleRequest(article_id))
@@ -444,6 +373,12 @@ class Article:
 
                 author_list = []
                 instutation_list = []
+
+
+                #TODO
+                #author list has some problems. some list has one author some has many author
+                #but parsing is quite difficult. it should be tested. for some articles below algorithm not working
+                #that's why its closed
 
                 # if len(author_list_text)>4 or type(author_list_text) == list:
                 #     for author_info in author_list_text:
@@ -495,6 +430,7 @@ class Article:
         else:
             print("\tArticle could not be retrieved.")
 
+    #collects the articles and prepares them for the search result operation
     @staticmethod
     def summary_articles(search_result,articles):
         # top_keywords = Article.get_top_keywords_of_articles(articles)
@@ -517,6 +453,7 @@ class Article:
         search_result.add_top_keywords(top_keywords)
 
 
+    #finds the 3 top keywords among the articles
     @staticmethod
     def get_top_keywords_of_articles(articles):
         abstracts = ""
@@ -536,6 +473,7 @@ class Article:
             top_keywords.append(most_common)
         return top_keywords
 
+    # finds the 3 top authors among the articles
     @staticmethod
     def get_top_authors_of_articles(articles):
         all_authors = []
@@ -547,6 +485,7 @@ class Article:
         del all_authors
         return most_common_authors
 
+    # calculates the publication dates among the articles and sorts them max to min
     @staticmethod
     def get_time_change_of_articles(articles):
         dates = {}
@@ -557,6 +496,7 @@ class Article:
                 dates[article.article_date] += 1
         return sorted(dates, key=dates.get, reverse=True)
 
+    #finds top 3 keywords of an article
     def get_top_keywords(self):
         # remove punctiotions
         s = self.abstract
@@ -575,6 +515,7 @@ class Article:
     def get_authors(self):
         return self.author_list
 
+    #abstract retrieve helper
     def get_abstract_text(self, unparsed_abstract_text):
         abstract_text = ""
         if type(unparsed_abstract_text) == list:
@@ -689,18 +630,6 @@ class SearchResult(object):
         """
         return str
 
-    def get_articles(self):
-        # https://www.w3schools.com/python/python_mongodb_query.asp
-        # get articles from entrez with using pm_id
-        # calculate article number
-        # calculate change over time
-        # calculate top_keywords
-
-        return
-
-    # gets article from pubmed with id
-    def get_article(self, id):
-        return
 
 
 class EntrezGetArticleRequest:
