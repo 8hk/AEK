@@ -53,15 +53,22 @@ class Article:
     journal_issn = ""
     journal_name = ""
     pubmed_link = ""
+    author_list = []
+    instutation_list = []
+    article_date = ""
+    top_three_keywords = []
 
-    def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link):
+    def __init__(self, pm_id, title, journal_issn, journal_name, abstract,
+                 pubmed_link,author_list,instutation_list,article_date):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
         self.journal_name = journal_name
         self.abstract = abstract
         self.pubmed_link = pubmed_link
-
+        self.author_list = author_list
+        self.instutation_list = instutation_list
+        self.article_date = article_date
 
 class EntrezSearchRequest:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
@@ -113,7 +120,7 @@ def retrieve_article_ids(search_term, max_article_limit):
         else:
             print("\tThis article id could not be retrieved.")
     except:
-        print("something related with ", sys.exc_info()[0]," definitely happened")
+        print("something related with ", sys.exc_info()," definitely happened")
 
 
 
@@ -129,20 +136,97 @@ def get_abstract_of_given_article_id(article_id):
 def retrieve_article(article_id):
     response = requests.get(EntrezGetArticleRequest(article_id))
     if response.ok:
-       try:
-           xpars = xmltodict.parse(response.text)
-           article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
-           article_title = article["ArticleTitle"]
-           journal_issn = article["Journal"]["ISSN"]["#text"]
-           journal_name = article["Journal"]["Title"]
-           pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
-           abstract = article["Abstract"]["AbstractText"]
+        try:
+            xpars = xmltodict.parse(response.text)
+            article=""
+            if xpars.get("PubmedArticleSet") is not None:
+                if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
+                    if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
+                        if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation").get("Article") is not None:
+                            article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
+                            article_title=""
+                            if article.get("ArticleTitle") is not None:
+                                article_title = article["ArticleTitle"]
 
-           return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
-       except:
-           print("Oops!", sys.exc_info()[0], "occurred for article id: ",article_id)
-    else:
-        print("\tArticle could not be retrieved.")
+                            journal_issn=""
+                            journal_name = ""
+                            if article.get("Journal") is not None:
+                                if article.get("Journal").get('ISSN') is not None:
+                                    if article.get("Journal").get('ISSN').get("#text") is not None:
+                                        journal_issn = article["Journal"]["ISSN"]["#text"]
+                                if article.get("Journal").get('Title') is not None:
+                                    journal_name = article["Journal"]["Title"]
+
+                            pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
+                            abstract = ""
+                            if article.get("Abstract") is not None:
+                                if article.get("Abstract").get('AbstractText') is not None:
+                                    abstract = article["Abstract"]['AbstractText']
+                            author_list_text = []
+                            author_list = []
+                            instutation_list = []
+                            if article.get("AuthorList") is not None:
+                                if article.get("AuthorList").get('Author') is not None:
+                                    author_list_text = article["AuthorList"]['Author']
+                                    # TODO
+                                    # author list has some problems. some list has one author some has many author
+                                    # but parsing is quite difficult. it should be tested. for some articles below algorithm not working
+                                    # that's why its closed
+
+                                    if len(author_list_text) > 4 or type(author_list_text) == list:
+                                        for author_info in author_list_text:
+                                            if len(author_info) > 2:
+                                                instute_name = ""
+                                                name = author_info['ForeName'] + " " + author_info['LastName']
+                                                author_list.append(name)
+                                                if author_info.get("AffiliationInfo") is not None:
+                                                    if (len(author_info['AffiliationInfo']) > 1):
+                                                        for affiliationInfo in author_info['AffiliationInfo']:
+                                                            instute_name += affiliationInfo['Affiliation'] + " "
+                                                    else:
+                                                        instute_name += author_info['AffiliationInfo']['Affiliation']
+                                                    instutation_list.append(instute_name)
+                                                else:
+                                                    instutation_list.append("")
+
+                                        if article.get("ArticleDate") is not None:
+                                            articledate = article["ArticleDate"]
+                                            article_date = articledate['Year']
+                                        else:
+                                            article_date = ""
+                                    elif len(author_list_text) == 1:
+                                        author_info = author_list_text
+                                        instute_name = ""
+                                        name = author_info['ForeName'] + " " + author_info['LastName']
+                                        author_list.append(name)
+                                        if author_info.get("AffiliationInfo") is not None:
+                                            if (len(author_info['AffiliationInfo']) > 1):
+                                                for affiliationInfo in author_info['AffiliationInfo']:
+                                                    instute_name += affiliationInfo['Affiliation'] + " "
+                                            else:
+                                                instute_name += author_info['AffiliationInfo']['Affiliation']
+                                            instutation_list.append(instute_name)
+                                        else:
+                                            instutation_list.append("")
+
+
+
+                            if article.get("ArticleDate") is not None:
+                                articledate = article["ArticleDate"]
+                                article_date = articledate['Year']
+                            else:
+                                article_date = ""
+
+                            return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link,
+                                           author_list,
+                                           instutation_list, article_date)
+                            # return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
+        except:
+            print("Oops!",sys.exc_info(), "occurred for article id: ", article_id)
+            print("Details about article:", article_title, " journal_issn:", journal_issn, " journal_name: ",
+                  journal_name," pubmed_link:", pubmed_link," author_list",author_list," instutation_list",instutation_list,
+                  " article_date:",article_date)
+            print("Oops!", sys.exc_info()[0], "occurred for article id: ", article_id)
 
 
 def get_abstract_text(unparsed_abstract_text):
@@ -196,7 +280,7 @@ def annotate(retrieved_article_ids):
                         print("\n--------------------------------------------")
 
             except:
-                print("Oops!", sys.exc_info()[0], "occurred.")
+                print("Oops!", sys.exc_info(), "occurred.")
             finally:
                 lock.release()
     return convert_to_json_abjects(annotated_article_ids)
