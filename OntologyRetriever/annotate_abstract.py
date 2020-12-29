@@ -23,7 +23,11 @@ import threading
 from datetime import datetime
 import concurrent
 lock = threading.Lock()
-
+import collections
+from nltk import FreqDist
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+import string
 client = MongoClient(
     host=os.environ.get("MONGO_DB_HOST", " ") + ":" + os.environ.get("MONGO_DB_PORT", " "),  # <-- IP and port go here
     serverSelectionTimeoutMS=3000,  # 3 second timeout
@@ -69,6 +73,24 @@ class Article:
         self.author_list = author_list
         self.instutation_list = instutation_list
         self.article_date = article_date
+        self.top_three_keywords = []
+
+    # finds top 3 keywords of an article's abstract
+    def get_top_keywords(self):
+        # remove punctiotions
+        s=""
+        s = self.abstract
+        s = s.translate(str.maketrans('', '', string.punctuation))
+        stopword = set(stopwords.words('english'))
+        # tokenize
+        word_tokens = word_tokenize(s)
+        # remove stopwords
+        removing_stopwords = [word for word in word_tokens if word not in stopword]
+        # find most common words
+        fdist = FreqDist(removing_stopwords)
+        print("most common ", fdist.most_common(3))
+        for most_common in fdist.most_common(3):
+            self.top_three_keywords.append(most_common[0])
 
 class EntrezSearchRequest:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
@@ -139,17 +161,23 @@ def retrieve_article(article_id):
         try:
             xpars = xmltodict.parse(response.text)
             article=""
+            article_title = ""
+            journal_issn = ""
+            journal_name = ""
+            pubmed_link=""
+            abstract = ""
+            author_list_text = []
+            author_list = []
+            instutation_list = []
+            articledate=""
             if xpars.get("PubmedArticleSet") is not None:
                 if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
                     if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
                         if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation").get("Article") is not None:
                             article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
-                            article_title=""
                             if article.get("ArticleTitle") is not None:
                                 article_title = article["ArticleTitle"]
 
-                            journal_issn=""
-                            journal_name = ""
                             if article.get("Journal") is not None:
                                 if article.get("Journal").get('ISSN') is not None:
                                     if article.get("Journal").get('ISSN').get("#text") is not None:
@@ -158,13 +186,10 @@ def retrieve_article(article_id):
                                     journal_name = article["Journal"]["Title"]
 
                             pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
-                            abstract = ""
                             if article.get("Abstract") is not None:
                                 if article.get("Abstract").get('AbstractText') is not None:
                                     abstract = article["Abstract"]['AbstractText']
-                            author_list_text = []
-                            author_list = []
-                            instutation_list = []
+
                             if article.get("AuthorList") is not None:
                                 if article.get("AuthorList").get('Author') is not None:
                                     author_list_text = article["AuthorList"]['Author']
@@ -261,6 +286,12 @@ def annotate(retrieved_article_ids):
                 print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
                 article = retrieve_article(retrieved_article_ids[id])
                 article.abstract = get_abstract_text(article.abstract)
+                article.get_top_keywords()
+                detailed_article_object= create_detailed_article_object(article)
+                detailed_article_list.append(detailed_article_object)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+                    future = executor.submit(write_details_into_database)
+                    result = future.result()
                 # print(str(id)+"\n")
                 # print(article.abstract)
                 for c in concepts:
@@ -347,7 +378,25 @@ def write_annotation_to_database(list):
             future = executor.submit(col.insert_one, list.pop())
             result_ = future.result()
 
+def write_details_into_database():
+    col=db["annotated_article_ids"]
+    while len(detailed_article_list)>0:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+            future = executor.submit(col.insert_one, detailed_article_list.pop())
+            result_ = future.result()
 
+def create_detailed_article_object(article):
+    return {
+        "id": article.pm_id,
+        "title": article.title,
+        "journal_name": article.journal_name,
+        "pubmed_link": article.pubmed_link,
+        "author_list": article.author_list,
+        "instutation_list": article.instutation_list,
+        "article_date": article.article_date,
+        "top_three_keywords": article.top_three_keywords,
+        "abstract": article.abstract
+    }
 
 if __name__ == "__main__":
     now = datetime.now()
@@ -365,8 +414,8 @@ if __name__ == "__main__":
         future = executor.submit(annotate,retrieved_article_ids)
         annotated_article_ids = future.result()
 
-    write_annotation_to_database(annotation_list)
-    write_to_database(annotated_article_ids, "annotated_article_ids")
+    # write_annotation_to_database(annotation_list)
+    # write_to_database(annotated_article_ids, "annotated_article_ids")
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")
     print("start time: ",start_time)
