@@ -170,6 +170,7 @@ def retrieve_article(article_id):
             author_list = []
             instutation_list = []
             articledate=""
+            article_date=""
             if xpars.get("PubmedArticleSet") is not None:
                 if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
                     if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
@@ -193,10 +194,6 @@ def retrieve_article(article_id):
                             if article.get("AuthorList") is not None:
                                 if article.get("AuthorList").get('Author') is not None:
                                     author_list_text = article["AuthorList"]['Author']
-                                    # TODO
-                                    # author list has some problems. some list has one author some has many author
-                                    # but parsing is quite difficult. it should be tested. for some articles below algorithm not working
-                                    # that's why its closed
 
                                     if len(author_list_text) > 4 or type(author_list_text) == list:
                                         for author_info in author_list_text:
@@ -286,9 +283,13 @@ def annotate(retrieved_article_ids):
                 print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
                 article = retrieve_article(retrieved_article_ids[id])
                 article.abstract = get_abstract_text(article.abstract)
-                article.get_top_keywords()
-                detailed_article_object= create_detailed_article_object(article)
-                detailed_article_list.append(detailed_article_object)
+                #dont insert same article details if it is already inserted into
+                if article.pm_id not in already_inserted_detailed_article_id_list:
+                    article.get_top_keywords()
+                    detailed_article_object = create_detailed_article_object(article)
+                    already_inserted_detailed_article_id_list.append(article.pm_id)
+                    detailed_article_list.append(detailed_article_object)
+
                 with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
                     future = executor.submit(write_details_into_database)
                     result = future.result()
@@ -365,12 +366,6 @@ def create_annotation_object(id, article, concept, position):
         }
     }
 
-
-def write_to_database(list, collection):
-    col=db[collection]
-    for item in list:
-        col.insert_one(item)
-
 def write_annotation_to_database(list):
     col=db["annotation"]
     while len(list)>0:
@@ -392,17 +387,30 @@ def create_detailed_article_object(article):
         "journal_name": article.journal_name,
         "pubmed_link": article.pubmed_link,
         "author_list": article.author_list,
-        "instutation_list": article.instutation_list,
+        "institution_list": article.instutation_list,
         "article_date": article.article_date,
         "top_three_keywords": article.top_three_keywords,
         "abstract": article.abstract
     }
 
+def get_detailed_article_ids_from_db():
+    query = {}
+    column = db["annotated_article_ids"]
+    document = column.find(query)
+    for x in document:
+        list_item = dict(x)
+        if list_item["id"] not in already_inserted_detailed_article_id_list :
+            already_inserted_detailed_article_id_list.append(list_item["id"])
+
+
 if __name__ == "__main__":
     now = datetime.now()
     start_time = now.strftime("%H:%M:%S")
     print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
+    # already_inserted_detailed_article_id_list
     retrieved_article_ids = []
+    #get all detailed articles from db
+    get_detailed_article_ids_from_db()
     for search_keyword in search_keywords:
         ids = retrieve_article_ids(search_keyword, number_of_article)
         for i in ids:
@@ -414,8 +422,6 @@ if __name__ == "__main__":
         future = executor.submit(annotate,retrieved_article_ids)
         annotated_article_ids = future.result()
 
-    # write_annotation_to_database(annotation_list)
-    # write_to_database(annotated_article_ids, "annotated_article_ids")
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")
     print("start time: ",start_time)
