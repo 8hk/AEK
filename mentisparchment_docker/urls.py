@@ -23,6 +23,6 @@ from django.views.static import serve as staticserve
 from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('search', views.detail, name='search'),
+    path('search/', views.detail, name='search'),
     path('', views.page),
 ]
