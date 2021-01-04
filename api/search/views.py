@@ -1,6 +1,7 @@
+import concurrent
+from concurrent.futures import ThreadPoolExecutor, wait, as_completed
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-
 # Create your views here.
 # desired operation below
 # m -> x?
@@ -36,7 +37,6 @@ import requests
 import xmltodict
 from collections import Counter
 import sys
-
 
 STATIC_JSON = """
 {
@@ -136,6 +136,11 @@ STATIC_JSON_5 = """
                     "keywords": [
                         "treatment"
                     ]
+                },
+                {
+                    "keywords": [
+                        "role"
+                    ]
                 }
     ]
 }
@@ -222,82 +227,85 @@ class SearchHelper(object):
     annotation_column = ""
     annotation_detail_column = ""
     articles = []
-    
+    article_details={}
+    search_result_list=[]
+    articles_by_term = {}
     def __init__(self, main_query):
         self.main_query = main_query
         self.dimensions = []
         self.combinations = []
         # we will use this later while parsing the articles
         self.all_terms = []
+        self.search_result_list=[]
+        self.articles_by_term = {}
 
         self.mongo_client = MongoClient(
             host='mongodb:27017',  # <-- IP and port go here
-            serverSelectionTimeoutMS=3000,  # 3 second timeout
             username='root',
             password='mongoadmin',
+            maxPoolSize=2000
         )
         self.db = self.mongo_client["mentisparchment_docker"]
         self.annotation_column = self.db["annotation"]
         self.annotation_detail_column = self.db["annotated_article_ids"]
 
+    def start_annotations(self,combination):
+        common_article_list = []
+        print("new combination",combination)
+        # articles_by_term = {}
+        # split the combination list
+        combination_line = combination.split(")")
+        urls = []
+        if len(combination_line) > 1:
+            for each_keyword_combination in combination_line:
+                if len(each_keyword_combination) > 0:
+                    # urls[each_keyword_combination]=self.get_article_ids(each_keyword_combination)
+                    urls.append(self.articles_by_term[each_keyword_combination])
+            common_article_list = list(set.intersection(*map(set, urls)))
+        elif len(combination_line) == 1:
+            common_article_list = self.articles_by_term[combination_line[0]]
+        print("common article list created for ", combination," total article list ",len(common_article_list))
+        if len(common_article_list) > 0:
+            article_details_futures = []
+            articles = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+                article_details_futures.append(executor.submit(self.get_article_details, common_article_list))
+            for x in as_completed(article_details_futures):
+                articles = x.result()
+            print("articles created for ",combination)
+            if len(articles) > 0:
+                search_result = SearchResult(combination)
+                search_result.add_articles(articles)
+                SearchResult.summary_articles(search_result, articles)
+                print("articles summarized for ", combination)
+                self.search_result_list.append(search_result)
+                del search_result
+                del articles
+        common_article_list.clear()
+
     def get_annotations(self):
         articles_by_term = {}
+
         search_result_list=[]
         response= {}
         response["keyword_pairs"]=[]
         for keyword in self.all_terms:
             article_list = self.get_article_ids(keyword)
-            articles_by_term[keyword] = article_list
+            self.articles_by_term[keyword] = article_list
 
         if len(self.combinations) > 0:
-            for combination in self.combinations:
-                common_article_list = []
-                # split the combination list
-                combination_line = combination.split(")")
-                urls = []
-                if len(combination_line) > 1:
-                    for each_keyword_combination in combination_line:
-                        if len(each_keyword_combination) > 0:
-                            # urls[each_keyword_combination]=self.get_article_ids(each_keyword_combination)
-                            urls.append(articles_by_term[each_keyword_combination])
-                    common_article_list = list(set.intersection(*map(set, urls)))
-                elif len(combination_line) == 1:
-                    common_article_list = articles_by_term[combination_line[0]]
-
-                if len(common_article_list)>0:
-                    articles=self.get_article_details(common_article_list)
-                    if len(articles)>0:
-                        search_result = SearchResult(combination)
-                        search_result.add_articles(articles)
-                        SearchResult.summary_articles(search_result,articles)
-                        search_result_list.append(search_result)
-                        del search_result
-                        del articles
-                common_article_list.clear()
-        index =0
-        for search_result in search_result_list:
-            response["keyword_pairs"].append(search_result.generate_dict_value())
-            # if len(search_result_list)>1:
-            #     index = index + 1
-            #     if index == len(search_result_list) - 1:
-            #         response["keyword_pairs"].append(json.dumps(search_result.__dict__))
-            #     else:
-            #         response += json.dumps(search_result.__dict__) + ","
-            # else:
-            #     response += json.dumps(search_result.__dict__)
-
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.combinations)) as executor:
+                futures = []
+                while self.combinations:
+                    futures.append(executor.submit(self.start_annotations, self.combinations.pop()))
+        dict_futures = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.search_result_list)) as executor:
+            while self.search_result_list:
+                dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value,response))
+                print("x before")
+        for x in as_completed(dict_futures):
+            print("dict value created for ",x)
         return response
-
-    # def get_annotations(self):
-    #     articles = {}
-    #     if len(self.combinations) > 0:
-    #         for combination in self.combinations:
-    #             bodylist = AnnotatedArticle.objects.filter(body_value=combination)
-    #             articles[combination] = []
-    #             for body in bodylist:
-    #                 articles[combination].append(body.target)
-    #         return articles
-
 
     def create_search_combinations(self, dimensions_json):
         for dimension in dimensions_json:
@@ -376,33 +384,37 @@ class SearchHelper(object):
                 article_id_list.append(list_item["target"]["id"])
         return article_id_list
 
+    def article_details_query(self,article_id):
+        mongo_query = {}
+        mongo_query["id"] = article_id
+        document = self.annotation_detail_column.find(mongo_query)
+        for x in document:
+            list_item = dict(x)
+            article = Article(pm_id=list_item["id"],
+                              title=list_item["id"],
+                              journal_issn="",
+                              journal_name=list_item["journal_name"],
+                              abstract=list_item["abstract"],
+                              pubmed_link=list_item["pubmed_link"],
+                              author_list=list_item["author_list"],
+                              instutation_list=list_item["institution_list"],
+                              article_date=list_item["article_date"],
+                              top_three_keywords=list_item["top_three_keywords"])
+            del list_item
+            del document
+            return article
 
 
     #collects the details of articles
     def get_article_details(self, article_list):
         articles=[]
-        for article_id in article_list:
-            mongo_query={}
-            mongo_query["id"] = article_id
-            document = self.annotation_detail_column.find(mongo_query)
-            for x in document:
-                list_item=dict(x)
-                article= Article(pm_id=list_item["id"],
-                                 title=list_item["id"],
-                                 journal_issn="",
-                                 journal_name=list_item["journal_name"],
-                                 abstract=list_item["abstract"],
-                                 pubmed_link=list_item["pubmed_link"],
-                                 author_list=list_item["author_list"],
-                                 instutation_list=list_item["institution_list"],
-                                 article_date=list_item["article_date"],
-                                 top_three_keywords=list_item["top_three_keywords"])
-                articles.append(article)
-                del article
+        futures = []
+        while article_list:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+                futures.append(executor.submit(self.article_details_query, article_list.pop()))
+        for x in (futures):
+            articles.append(x.result())
         return articles
-            # article = Article.retrieve_article(article_id)
-            # article.abstract = article.get_abstract_text(article.abstract)
-            # self.articles.append(article)
 
 def page(request):
     return render(request, 'html/index.html')
@@ -529,7 +541,7 @@ class SearchResult(object):
         str = f'"value":{self.keyword.replace(")"," ")},"papers_number":{self.number_of_article},"top_authors":{self.top_authors},"top_keywords":{self.top_keywords},"publication_year":{self.result_change_time_years},"publication_year_values":{self.result_change_time_numbers}'
         return s1+str+s3
 
-    def generate_dict_value(self):
+    def generate_dict_value(self,response):
         dict = {}
         json_articles=[]
         for article in self.articles:
@@ -541,7 +553,10 @@ class SearchResult(object):
         dict["publication_year"] = self.result_change_time_years
         dict["publication_year_values"] = self.result_change_time_numbers
         dict["articles"] = json_articles
-        return dict
+        response["keyword_pairs"].append(dict)
+        # return dict
+
+
 
     # collects the articles and prepares them for the search result operation
     @staticmethod
@@ -600,18 +615,6 @@ class SearchResult(object):
                 dates[article.article_date] += 1
         return dict(sorted(dates.items(), key=lambda item: item[1], reverse=True))
 
-
-
-
-# class EntrezGetArticleRequest:
-#     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
-#     article_id = 0
-#
-#     def __init__(self, article_id):
-#         self.article_id = article_id
-#
-#     def __str__(self):
-#         return self.base_url + "efetch.fcgi?db=pubmed&id=" + self.article_id + "&retmode=xml"
 
 
 def page(request):
