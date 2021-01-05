@@ -1,6 +1,8 @@
 import concurrent
 from concurrent.futures import ThreadPoolExecutor, wait, as_completed
 from django.shortcuts import render
+from django.template import RequestContext
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 # desired operation below
@@ -21,7 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 # 8. x b c d
 # 9. x b c e
 import json
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from pymongo import MongoClient
 
 from api.mainquery.views import Dimension
@@ -38,147 +40,8 @@ import xmltodict
 from collections import Counter
 import sys
 
-STATIC_JSON = """
-{
-    "dimensions":[
-        {
-                    "keywords": [
-                        "a","b","c","d"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "e","f"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "g","h"
-                    ]
-                }
-    ]
-}
-"""
-
-STATIC_JSON_2 = """
-{
-    "dimensions":[
-        {
-                    "keywords": [
-                        "a","b"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "c"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "d"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "e"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "f","g"
-                    ]
-                }
-    ]
-}
-"""
-
-STATIC_JSON_3 = """
-{
-    "main_query":"",
-    "dimensions":[
-        {
-                    "keywords": [
-                        "bipolar disorder"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "entity"
-                    ]
-                }
-    ]
-}
-"""
-
-STATIC_JSON_4 = """
-{
-    "main_query":"",
-    "dimensions":[
-        {
-                    "keywords": [
-                        "treatment"
-                    ]
-                },
-        {
-                    "keywords": [
-                        "role"
-                    ]
-                }
-    ]
-}
-"""
-
-STATIC_JSON_5 = """
-{
-    "main_query":"bipolar disorder",
-    "dimensions":[
-        {
-                    "keywords": [
-                        "treatment"
-                    ]
-                },
-                {
-                    "keywords": [
-                        "role"
-                    ]
-                }
-    ]
-}
-"""
-
-STATIC_SUMMARY_JSON = """
-{
-    "keyword_pairs":[
-        {
-            "value":"bipolar disorder",
-            "papers_number":1200,
-            "top_authors":["William Anot","John Doe","Jack Spar"],
-            "top_keywords":["attention ","autism","spectrum"],
-            "publication_year":[2020,2019,2018,2017,2003,1992],
-            "publication_year_values":[20,500,400,150,50,200]
-        },
-        {
-            "value":"manic depressive",
-            "papers_number":1350,
-            "top_authors":["Adam Rot","Sarah Lats","Abbie Dur"],
-            "top_keywords":["suicidal","disorder","behavior"],
-            "publication_year":[2017,2016,2015,2014],
-            "publication_year_values":[200,800,1000,1500]
-        },
-        {
-            "value":"bipolar disorder-manic depressive" ,
-            "papers_number":350,
-            "top_authors":["Adele Codre","Niche Dur","Agatha Cirs"],
-            "top_keywords":["disease","circadian","hallucination"],
-            "publication_year":[2017,2016,2015,2014],
-            "publication_year_values":[600,800,300,450]
-        }
-    ]
-}
-"""
-
 @csrf_exempt
-def detail(request):
+def startSearch(request):
     if request.method == "POST":
         print("post")
         main_query = request.POST.get("main_query")
@@ -186,29 +49,11 @@ def detail(request):
         print("main: ", main_query)
         print("dimensions: ", dimensions)
         dimensions_json = json.loads(dimensions)["dimensions"]
-
         resp = Search.search_annotated_articles(main_query, dimensions_json)
-        return HttpResponse("%s" % resp)
-    elif request.method == "GET":
-        simple_search=SimpleSearch(STATIC_JSON_5)
-        args={}
-        args["mytext"] = json.dumps(simple_search.resp)
-        return TemplateResponse(request, 'html/summary-page.html', args)
-        # return HttpResponse("%s" % simple_search.resp)
-
-
-class SimpleSearch:
-    resp = ""
-
-    def __init__(self, query):
-        json_query = json.loads(query)
-        self.main_query = json_query["main_query"]
-        self.dimensions = json_query["dimensions"]
-        self.resp = Search.search_annotated_articles(self.main_query, self.dimensions)
-
-
-
-
+        data = {}
+        data["keyword_pairs"] = json.dumps(resp)
+        request.session['keyword_pairs'] = data
+        return HttpResponseRedirect(reverse("summaryPage"))
 
 class Search:
     @staticmethod
@@ -252,14 +97,12 @@ class SearchHelper(object):
     def start_annotations(self,combination):
         common_article_list = []
         print("new combination",combination)
-        # articles_by_term = {}
         # split the combination list
         combination_line = combination.split(")")
         urls = []
         if len(combination_line) > 1:
             for each_keyword_combination in combination_line:
                 if len(each_keyword_combination) > 0:
-                    # urls[each_keyword_combination]=self.get_article_ids(each_keyword_combination)
                     urls.append(self.articles_by_term[each_keyword_combination])
             common_article_list = list(set.intersection(*map(set, urls)))
         elif len(combination_line) == 1:
@@ -284,8 +127,6 @@ class SearchHelper(object):
         common_article_list.clear()
 
     def get_annotations(self):
-        articles_by_term = {}
-
         search_result_list=[]
         response= {}
         response["keyword_pairs"]=[]
@@ -296,15 +137,14 @@ class SearchHelper(object):
         if len(self.combinations) > 0:
             with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.combinations)) as executor:
                 futures = []
-                while self.combinations:
-                    futures.append(executor.submit(self.start_annotations, self.combinations.pop()))
+                for combination in self.combinations:
+                    futures.append(executor.submit(self.start_annotations, combination))
         dict_futures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.search_result_list)) as executor:
             while self.search_result_list:
                 dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value,response))
-                print("x before")
         for x in as_completed(dict_futures):
-            print("dict value created for ",x)
+            print("dict value created")
         return response
 
     def create_search_combinations(self, dimensions_json):
@@ -372,7 +212,7 @@ class SearchHelper(object):
             for keyword in dimension_line.keywords:
                 self.all_terms.append(keyword)
 
-    #takes article details from mongodb with its keyword
+    #takes article ids from mongodb with its keyword
     def get_article_ids(self, combination):
         query = {}
         query["body.value.id"] = combination
@@ -384,6 +224,7 @@ class SearchHelper(object):
                 article_id_list.append(list_item["target"]["id"])
         return article_id_list
 
+    # takes article details from mongodb with its keyword
     def article_details_query(self,article_id):
         mongo_query = {}
         mongo_query["id"] = article_id
@@ -394,7 +235,8 @@ class SearchHelper(object):
                               title=list_item["id"],
                               journal_issn="",
                               journal_name=list_item["journal_name"],
-                              abstract=list_item["abstract"],
+                              abstract="",
+                              # abstract=list_item["abstract"],
                               pubmed_link=list_item["pubmed_link"],
                               author_list=list_item["author_list"],
                               instutation_list=list_item["institution_list"],
@@ -405,7 +247,7 @@ class SearchHelper(object):
             return article
 
 
-    #collects the details of articles
+    #create collection of details of articles
     def get_article_details(self, article_list):
         articles=[]
         futures = []
@@ -416,8 +258,6 @@ class SearchHelper(object):
             articles.append(x.result())
         return articles
 
-def page(request):
-    return render(request, 'html/index.html')
 
 #it is similar class with annotate_abstract
 class Article(object):
@@ -431,6 +271,7 @@ class Article(object):
     instutation_list = []
     article_date = ""
     top_three_keywords = []
+    json_val=""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link, author_list, instutation_list,
                  article_date,top_three_keywords):
@@ -444,6 +285,8 @@ class Article(object):
         self.instutation_list = instutation_list
         self.article_date = article_date
         self.top_three_keywords =top_three_keywords
+        #todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
+        # self.json_val=self.toJSON()
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
@@ -544,17 +387,19 @@ class SearchResult(object):
     def generate_dict_value(self,response):
         dict = {}
         json_articles=[]
-        for article in self.articles:
-            json_articles.append(article.toJSON())
+        # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
+        # for article in self.articles:
+        #     json_articles.append(article.json_val)
         dict["value"] = self.keyword.replace(")", " ")
         dict["papers_number"] = self.number_of_article
         dict["top_authors"] = self.top_authors
         dict["top_keywords"] = self.top_keywords
         dict["publication_year"] = self.result_change_time_years
         dict["publication_year_values"] = self.result_change_time_numbers
-        dict["articles"] = json_articles
+        # dict["articles"] = json_articles
+        del json_articles
         response["keyword_pairs"].append(dict)
-        # return dict
+        del dict
 
 
 
@@ -564,6 +409,7 @@ class SearchResult(object):
         top_keywords = SearchResult.get_top_keywords_of_articles(articles)
         # top_authors =[]
         top_authors = SearchResult.get_top_authors_of_articles(articles)
+        #todo bazen tarih bos geliyor?
         time_change_dict = SearchResult.get_time_change_of_articles(articles)
         time_change_list = list(time_change_dict.items())[:5]
         years = [i[0] for i in time_change_list]
@@ -575,8 +421,7 @@ class SearchResult(object):
         search_result.add_top_authors(top_authors)
         search_result.add_top_keywords(top_keywords)
 
-        # finds the 3 top keywords among the articles
-
+    # finds the 3 top keywords among the articles
     @staticmethod
     def get_top_keywords_of_articles(articles):
         abstracts = ""
@@ -619,3 +464,7 @@ class SearchResult(object):
 
 def page(request):
     return render(request, 'html/index.html')
+
+def summaryPage(request):
+    args = request.session.get('keyword_pairs')
+    return render(request, 'html/summary-page.html', args)
