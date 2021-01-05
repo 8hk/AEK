@@ -1,62 +1,69 @@
 {% load static %}
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Search</title>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Search</title>
 
-    <!-- JQuery 3.5.1 -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <!-- JQuery 3.5.1 -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-    <!-- Bootstrap 3.4.1 -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        <!-- Bootstrap 3.4.1 -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
-    <!-- Bootstrap Tags Input Plugin -->
-    <link rel="stylesheet" href="{% static 'css/bootstrap-tagsinput.css' %}">
-    <script src="{% static 'js/bootstrap-tagsinput.js' %}"></script>
+        <!-- Bootstrap Tags Input Plugin -->
+        <link rel="stylesheet" href="{% static 'css/bootstrap-tagsinput.css' %}">
+        <script src="{% static 'js/bootstrap-tagsinput.js' %}"></script>
 
-    <!-- Custom scripts -->
-    <script src="{% static 'js/custom/search.js' %}"></script>
+        <!-- Custom scripts -->
+        <script src="{% static 'js/custom/search.js' %}"></script>
 
-    <!-- Custom stylesheets -->
-    <link rel="stylesheet" href="{% static 'css/custom/search.css' %}">
-</head>
-<body>
-    <!-- Search header -->
-    <div class="container-fluid search-header-bg text-center">
-        <h3>Search Engine</h3>
+        <!-- Custom stylesheets -->
+        <link rel="stylesheet" href="{% static 'css/custom/search.css' %}">
+    </head>
+    <body>
+    <div id="loader" style="display: none;">
+        <img src="{% static 'assets/flask.gif' %}"/>
     </div>
-
-    <!-- Main query bar -->
-    <div class="container-fluid search-bar">
-        <!-- Search form -->
-        <div class="search-form input-group-sm mb-3">
-            <input class="form-control" id="mainQueryId" type="text" maxlength="100" placeholder="Enter a query..." aria-label="Search">
+    <div id="main-body">
+        <p id="message"></p>
+        <!-- Search header -->
+        <div class="container-fluid search-header-bg text-center">
+            <h3>Search Engine</h3>
         </div>
-        <!-- Search button -->
-        <div class="search-button text-center">
-            <a href="#" class="btn btn-default btn-sm" onclick="requestSearch()">
-                <span class="glyphicon glyphicon-search"></span> Search
-            </a>
-        </div>
-    </div>
 
-    <!-- Dimensions -->
-    <div class="dimensions" id="dimensionsContainerId"></div>
-    <!-- Add Dimension Button -->
-    <div id="addDimensionsContainerId" >
+        <!-- Main query bar -->
         <div class="container-fluid search-bar">
-            <!-- Add dimension button -->
+            <!-- Search form -->
+            <div class="search-form input-group-sm mb-3">
+                <input class="form-control" id="mainQueryId" type="text" maxlength="100" placeholder="Enter a query..."
+                       aria-label="Search">
+            </div>
+            <!-- Search button -->
             <div class="search-button text-center">
-                <a class="btn btn-default btn-sm" id="addDimensionsButtonId" onclick="addDimension()">
-                    <span class="glyphicon glyphicon-plus"></span> Add dimension
+                <a href="#" class="btn btn-default btn-sm" onclick="requestSearch()">
+                    <span class="glyphicon glyphicon-search"></span> Search
                 </a>
+            </div>
+        </div>
+
+        <!-- Dimensions -->
+        <div class="dimensions" id="dimensionsContainerId"></div>
+        <!-- Add Dimension Button -->
+        <div id="addDimensionsContainerId">
+            <div class="container-fluid search-bar">
+                <!-- Add dimension button -->
+                <div class="search-button text-center">
+                    <a class="btn btn-default btn-sm" id="addDimensionsButtonId" onclick="addDimension()">
+                        <span class="glyphicon glyphicon-plus"></span> Add dimension
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-</body>
-</html>
+    </body>
+    </html>
 {% endblock %}

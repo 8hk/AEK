@@ -112,19 +112,25 @@ function requestSearch() {
         dimensions: dimensions_str
     };
     console.log("Post data: " + serializedData);
-
+    $('#loader').show();
+    $('#main-body').hide();
     $.ajax({
-        url: "/search",
+        url: "search/",
         type: "post",
         data: serializedData,
-        cache: 'false',
+        cache: 'true',
+        timeout: 300000,
 
         success: function (response) {   // Successful at adding a relation.
             console.log("Search request is successful.");
             console.log(response);
+            window.location.href = '/summary-page/';
         },
         error: function (response) {
             console.log("Search request is unsuccessful.");
-        }
+        },
+        complete: function(){
+        $('#loader').hide();
+      }
     });
 }

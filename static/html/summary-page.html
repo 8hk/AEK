@@ -52,7 +52,7 @@
 <script type="module">
     import {Pair} from "{% static 'js/custom/keyword_pair.js' %}";
 
-    var data = '{{mytext|escapejs}}';
+    var data = '{{keyword_pairs|escapejs}}';
     console.log(data)
     let call = new Pair(data);
 </script>
