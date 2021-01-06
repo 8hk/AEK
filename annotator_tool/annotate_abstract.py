@@ -386,12 +386,6 @@ def create_annotation_object(id, article, concept, position):
         }
     }
 
-def write_annotated_article_ids_to_database(list, collection="annotated_article_ids"):
-    col = db[collection]
-    for item in list:
-        col.insert_one(item)
-
-
 def write_annotations_to_database(list, collection="annotation"):
     col = db[collection]
     while len(list) > 0:
@@ -465,9 +459,6 @@ if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
         future = executor.submit(annotate, retrieved_article_ids)
         annotated_article_ids = future.result()
-
-    write_annotations_to_database(annotation_list)
-    write_annotated_article_ids_to_database(annotated_article_ids)
 
     try:
         elastic = Elasticsearch(hosts=["es01"])
