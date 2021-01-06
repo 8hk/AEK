@@ -24,7 +24,6 @@ from datetime import datetime
 import concurrent
 from elasticsearch import Elasticsearch, helpers
 import uuid
-import json
 
 lock = threading.Lock()
 
@@ -51,6 +50,7 @@ annotation_list = []
 
 articles = []
 
+
 class Article:
     pm_id = ""
     title = ""
@@ -66,6 +66,8 @@ class Article:
         self.journal_name = journal_name
         self.abstract = abstract
         self.pubmed_link = pubmed_link
+        self.authors = ""  # TODO: Retrieve article authors
+        self.keywords = ""  # TODO: Retrieve article keywords
 
 
 class EntrezSearchRequest:
@@ -118,8 +120,7 @@ def retrieve_article_ids(search_term, max_article_limit):
         else:
             print("\tThis article id could not be retrieved.")
     except:
-        print("something related with ", sys.exc_info()[0]," definitely happened")
-
+        print("something related with ", sys.exc_info()[0], " definitely happened")
 
 
 def get_abstract_of_given_article_id(article_id):
@@ -134,18 +135,18 @@ def get_abstract_of_given_article_id(article_id):
 def retrieve_article(article_id):
     response = requests.get(EntrezGetArticleRequest(article_id))
     if response.ok:
-       try:
-           xpars = xmltodict.parse(response.text)
-           article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
-           article_title = article["ArticleTitle"]
-           journal_issn = article["Journal"]["ISSN"]["#text"]
-           journal_name = article["Journal"]["Title"]
-           pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
-           abstract = article["Abstract"]["AbstractText"]
+        try:
+            xpars = xmltodict.parse(response.text)
+            article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
+            article_title = article["ArticleTitle"]
+            journal_issn = article["Journal"]["ISSN"]["#text"]
+            journal_name = article["Journal"]["Title"]
+            pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
+            abstract = article["Abstract"]["AbstractText"]
 
-           return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
-       except:
-           print("Oops!", sys.exc_info()[0], "occurred for article id: ",article_id)
+            return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
+        except:
+            print("Oops!", sys.exc_info()[0], "occurred for article id: ", article_id)
     else:
         print("\tArticle could not be retrieved.")
 
@@ -196,16 +197,18 @@ def annotate(retrieved_article_ids):
                             # print(annotation_object)
                             annotation_counter = annotation_counter + 1
                             annotation_list.append(annotation_object)
-                            if len(annotation_list)>0:
-                                write_annotation_to_database(annotation_list)
+                            if len(annotation_list) > 0:
+                                write_annotations_to_database(annotation_list)
                         print("\n--------------------------------------------")
 
                 article_json = {
                     "title": article.title,
-                    #"authors": article
-                    "abstract": article.abstract
+                    "authors": article.authors,
+                    "keywords": article.keywords,
+                    "abstract": article.abstract,
+                    "timestamp": datetime.now()
                 }
-                articles.append(json.dumps(article_json))
+                articles.append(article_json)
 
             except:
                 print("Oops!", sys.exc_info()[0], "occurred.")
@@ -219,6 +222,7 @@ def convert_to_json_abjects(annotated_article_ids):
     for i in annotated_article_ids:
         annotated_article_ids_json.append({'id': i})
     return annotated_article_ids_json
+
 
 def get_index_positions(abstract, element):
     abstract = abstract.lower()
@@ -264,13 +268,22 @@ def create_annotation_object(id, article, concept, position):
 
 
 def write_annotated_article_ids_to_database(list, collection="annotated_article_ids"):
-    col=db[collection]
+    col = db[collection]
     for item in list:
         col.insert_one(item)
 
+
 def write_annotations_to_database(list, collection="annotation"):
-    col=db[collection]
-    while len(list)>0:
+    col = db[collection]
+    while len(list) > 0:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+            future = executor.submit(col.insert_one, list.pop())
+            result_ = future.result()
+
+
+def write_abstracts_to_database(list, collection="abstracts"):
+    col = db[collection]
+    while len(list) > 0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
             future = executor.submit(col.insert_one, list.pop())
             result_ = future.result()
@@ -278,9 +291,6 @@ def write_annotations_to_database(list, collection="annotation"):
 
 def bulk_json_data(json_list, _index, doc_type):
     for json in json_list:
-        # use a `yield` generator so that the data
-        # isn't loaded into memory
-
         if '{"index"' not in json:
             yield {
                 "_index": _index,
@@ -291,22 +301,6 @@ def bulk_json_data(json_list, _index, doc_type):
 
 
 if __name__ == "__main__":
-
-    # actions = [
-    #     {
-    #         "_id": uuid.uuid4(),  # random UUID for _id
-    #         "doc_type": "person",  # document _type
-    #         "doc": {  # the body of the document
-    #             "name": "George Peterson",
-    #             "sex": "male",
-    #             "age": 34 + doc,
-    #             "years": 10 + doc
-    #         }
-    #     }
-    #     for doc in range(100)
-    # ]
-
-    #articles = []
     now = datetime.now()
     start_time = now.strftime("%H:%M:%S")
     print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
@@ -319,25 +313,23 @@ if __name__ == "__main__":
 
     annotated_article_ids = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
-        future = executor.submit(annotate,retrieved_article_ids)
+        future = executor.submit(annotate, retrieved_article_ids)
         annotated_article_ids = future.result()
 
     write_annotations_to_database(annotation_list)
-    write_annotated_article_ids_to_database(annotated_article_ids, "annotated_article_ids")
+    write_annotated_article_ids_to_database(annotated_article_ids)
 
-    elastic = Elasticsearch(hosts=["es01"])
     try:
+        elastic = Elasticsearch(hosts=["es01"])
         print(articles)
-        # make the bulk call, and get a response
-        #response = helpers.bulk(elastic, bulk_json_data("people.json", "employees", "people"))
-        response = helpers.bulk(elastic, bulk_json_data(articles, index="test", doc_type="doc"))
-        #response = elastic.bulk("test", "doc", articles)
-        # response = helpers.bulk(elastic, actions, index='employees', doc_type='people')
-        print ("\nRESPONSE:", response)
+        response = helpers.bulk(elastic, bulk_json_data(articles, "test", "doc"))
+        print("\nRESPONSE:", response)
     except Exception as e:
         print("\nERROR:", e)
 
+    write_abstracts_to_database(articles)
+
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")
-    print("start time: ",start_time)
-    print("finish time: ",finish_time)
+    print("start time: ", start_time)
+    print("finish time: ", finish_time)
