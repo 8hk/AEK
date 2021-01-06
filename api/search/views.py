@@ -21,6 +21,8 @@ from django.views.decorators.csrf import csrf_exempt
 # 9. x b c e
 import json
 from django.http import HttpResponse
+from datetime import datetime
+from elasticsearch import Elasticsearch
 
 from api.mainquery.views import Dimension
 from api.search.models import AnnotatedArticle
@@ -117,6 +119,7 @@ class Search:
         helper = SearchHelper(main_query)
         helper.create_search_combinations(dimensions_json)
         articles = helper.get_annotations()
+        helper.elastic_search()
         del helper
         return articles
 
@@ -192,6 +195,36 @@ class SearchHelper(object):
                                              other_dimension_keyword,
                                              other_dimension_index, index + 1)
 
+    def elastic_search(self):
+        es = Elasticsearch(hosts=["es01"])
+
+        doc = {
+            'author': 'first last',
+            'title': 'title',
+            'abstract': 'abstract goes here',
+            'timestamp': datetime.now(),
+        }
+        res = es.index(index="test-index", id=1, body=doc)
+        print(res['result'])
+
+        res = es.get(index="test-index", id=1)
+        print(res['_source'])
+
+        es.indices.refresh(index="test-index")
+
+        res = es.search(
+            index="test-index",
+            body={
+                "query": {
+                    "match": {
+                        "abstract": "goes"
+                    }
+                }
+            }
+        )
+        print("Got %d Hits:" % res['hits']['total']['value'])
+        for hit in res['hits']['hits']:
+            print("%(timestamp)s %(author)s: %(abstract)s" % hit["_source"])
 
 def page(request):
     return render(request, 'html/index.html')
