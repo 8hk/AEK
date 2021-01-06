@@ -37,6 +37,9 @@ client = MongoClient(
 
 db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
 
+detailed_article_list = []
+already_inserted_detailed_article_id_list = []
+
 # import ontology_retriever as onRe
 # print("Retrieving all concepts in the following list of ontologies: ", onRe.list_of_bioportal_ontologies)
 # concepts = onRe.retrieve_annotations(API_KEY, max_page_limit=10)
