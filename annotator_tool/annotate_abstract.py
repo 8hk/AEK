@@ -22,6 +22,10 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 from datetime import datetime
 import concurrent
+from elasticsearch import Elasticsearch, helpers
+import uuid
+import json
+
 lock = threading.Lock()
 
 client = MongoClient(
@@ -45,6 +49,7 @@ number_of_article = 50
 
 annotation_list = []
 
+articles = []
 
 class Article:
     pm_id = ""
@@ -195,6 +200,13 @@ def annotate(retrieved_article_ids):
                                 write_annotation_to_database(annotation_list)
                         print("\n--------------------------------------------")
 
+                article_json = {
+                    "title": article.title,
+                    #"authors": article
+                    "abstract": article.abstract
+                }
+                articles.append(json.dumps(article_json))
+
             except:
                 print("Oops!", sys.exc_info()[0], "occurred.")
             finally:
@@ -251,21 +263,50 @@ def create_annotation_object(id, article, concept, position):
     }
 
 
-def write_to_database(list, collection):
+def write_annotated_article_ids_to_database(list, collection="annotated_article_ids"):
     col=db[collection]
     for item in list:
         col.insert_one(item)
 
-def write_annotation_to_database(list):
-    col=db["annotation"]
+def write_annotations_to_database(list, collection="annotation"):
+    col=db[collection]
     while len(list)>0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
             future = executor.submit(col.insert_one, list.pop())
             result_ = future.result()
 
 
+def bulk_json_data(json_list, _index, doc_type):
+    for json in json_list:
+        # use a `yield` generator so that the data
+        # isn't loaded into memory
+
+        if '{"index"' not in json:
+            yield {
+                "_index": _index,
+                "_type": doc_type,
+                "_id": uuid.uuid4(),
+                "_source": json
+            }
+
 
 if __name__ == "__main__":
+
+    # actions = [
+    #     {
+    #         "_id": uuid.uuid4(),  # random UUID for _id
+    #         "doc_type": "person",  # document _type
+    #         "doc": {  # the body of the document
+    #             "name": "George Peterson",
+    #             "sex": "male",
+    #             "age": 34 + doc,
+    #             "years": 10 + doc
+    #         }
+    #     }
+    #     for doc in range(100)
+    # ]
+
+    #articles = []
     now = datetime.now()
     start_time = now.strftime("%H:%M:%S")
     print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
@@ -281,8 +322,21 @@ if __name__ == "__main__":
         future = executor.submit(annotate,retrieved_article_ids)
         annotated_article_ids = future.result()
 
-    write_annotation_to_database(annotation_list)
-    write_to_database(annotated_article_ids, "annotated_article_ids")
+    write_annotations_to_database(annotation_list)
+    write_annotated_article_ids_to_database(annotated_article_ids, "annotated_article_ids")
+
+    elastic = Elasticsearch(hosts=["es01"])
+    try:
+        print(articles)
+        # make the bulk call, and get a response
+        #response = helpers.bulk(elastic, bulk_json_data("people.json", "employees", "people"))
+        response = helpers.bulk(elastic, bulk_json_data(articles, index="test", doc_type="doc"))
+        #response = elastic.bulk("test", "doc", articles)
+        # response = helpers.bulk(elastic, actions, index='employees', doc_type='people')
+        print ("\nRESPONSE:", response)
+    except Exception as e:
+        print("\nERROR:", e)
+
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")
     print("start time: ",start_time)
