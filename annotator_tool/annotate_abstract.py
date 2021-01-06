@@ -26,7 +26,11 @@ from elasticsearch import Elasticsearch, helpers
 import uuid
 
 lock = threading.Lock()
-
+import collections
+from nltk import FreqDist
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+import string
 client = MongoClient(
     host=os.environ.get("MONGO_DB_HOST", " ") + ":" + os.environ.get("MONGO_DB_PORT", " "),  # <-- IP and port go here
     serverSelectionTimeoutMS=3000,  # 3 second timeout
@@ -35,6 +39,9 @@ client = MongoClient(
 )
 
 db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
+
+detailed_article_list = []
+already_inserted_detailed_article_id_list = []
 
 # import ontology_retriever as onRe
 # print("Retrieving all concepts in the following list of ontologies: ", onRe.list_of_bioportal_ontologies)
@@ -58,17 +65,40 @@ class Article:
     journal_issn = ""
     journal_name = ""
     pubmed_link = ""
+    author_list = []
+    instutation_list = []
+    article_date = ""
+    top_three_keywords = []
 
-    def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link):
+    def __init__(self, pm_id, title, journal_issn, journal_name, abstract,
+                 pubmed_link,author_list,instutation_list,article_date):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
         self.journal_name = journal_name
         self.abstract = abstract
         self.pubmed_link = pubmed_link
-        self.authors = ""  # TODO: Retrieve article authors
-        self.keywords = ""  # TODO: Retrieve article keywords
+        self.author_list = author_list
+        self.instutation_list = instutation_list
+        self.article_date = article_date
+        self.top_three_keywords = []
 
+    # finds top 3 keywords of an article's abstract
+    def get_top_keywords(self):
+        # remove punctiotions
+        s=""
+        s = self.abstract
+        s = s.translate(str.maketrans('', '', string.punctuation))
+        stopword = set(stopwords.words('english'))
+        # tokenize
+        word_tokens = word_tokenize(s)
+        # remove stopwords
+        removing_stopwords = [word for word in word_tokens if word not in stopword]
+        # find most common words
+        fdist = FreqDist(removing_stopwords)
+        print("most common ", fdist.most_common(3))
+        for most_common in fdist.most_common(3):
+            self.top_three_keywords.append(most_common[0])
 
 class EntrezSearchRequest:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
@@ -120,7 +150,8 @@ def retrieve_article_ids(search_term, max_article_limit):
         else:
             print("\tThis article id could not be retrieved.")
     except:
-        print("something related with ", sys.exc_info()[0], " definitely happened")
+        print("something related with ", sys.exc_info()," definitely happened")
+
 
 
 def get_abstract_of_given_article_id(article_id):
@@ -137,18 +168,95 @@ def retrieve_article(article_id):
     if response.ok:
         try:
             xpars = xmltodict.parse(response.text)
-            article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
-            article_title = article["ArticleTitle"]
-            journal_issn = article["Journal"]["ISSN"]["#text"]
-            journal_name = article["Journal"]["Title"]
-            pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
-            abstract = article["Abstract"]["AbstractText"]
+            article=""
+            article_title = ""
+            journal_issn = ""
+            journal_name = ""
+            pubmed_link=""
+            abstract = ""
+            author_list_text = []
+            author_list = []
+            instutation_list = []
+            articledate=""
+            article_date=""
+            if xpars.get("PubmedArticleSet") is not None:
+                if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
+                    if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
+                        if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation").get("Article") is not None:
+                            article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
+                            if article.get("ArticleTitle") is not None:
+                                article_title = article["ArticleTitle"]
 
-            return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
+                            if article.get("Journal") is not None:
+                                if article.get("Journal").get('ISSN') is not None:
+                                    if article.get("Journal").get('ISSN').get("#text") is not None:
+                                        journal_issn = article["Journal"]["ISSN"]["#text"]
+                                if article.get("Journal").get('Title') is not None:
+                                    journal_name = article["Journal"]["Title"]
+
+                            pubmed_link = "https://pubmed.ncbi.nlm.nih.gov/" + str(article_id) + "/"
+                            if article.get("Abstract") is not None:
+                                if article.get("Abstract").get('AbstractText') is not None:
+                                    abstract = article["Abstract"]['AbstractText']
+
+                            if article.get("AuthorList") is not None:
+                                if article.get("AuthorList").get('Author') is not None:
+                                    author_list_text = article["AuthorList"]['Author']
+
+                                    if len(author_list_text) > 4 or type(author_list_text) == list:
+                                        for author_info in author_list_text:
+                                            if len(author_info) > 2:
+                                                instute_name = ""
+                                                name = author_info['ForeName'] + " " + author_info['LastName']
+                                                author_list.append(name)
+                                                if author_info.get("AffiliationInfo") is not None:
+                                                    if (len(author_info['AffiliationInfo']) > 1):
+                                                        for affiliationInfo in author_info['AffiliationInfo']:
+                                                            instute_name += affiliationInfo['Affiliation'] + " "
+                                                    else:
+                                                        instute_name += author_info['AffiliationInfo']['Affiliation']
+                                                    instutation_list.append(instute_name)
+                                                else:
+                                                    instutation_list.append("")
+
+                                        if article.get("ArticleDate") is not None:
+                                            articledate = article["ArticleDate"]
+                                            article_date = articledate['Year']
+                                        else:
+                                            article_date = ""
+                                    elif len(author_list_text) == 1:
+                                        author_info = author_list_text
+                                        instute_name = ""
+                                        name = author_info['ForeName'] + " " + author_info['LastName']
+                                        author_list.append(name)
+                                        if author_info.get("AffiliationInfo") is not None:
+                                            if (len(author_info['AffiliationInfo']) > 1):
+                                                for affiliationInfo in author_info['AffiliationInfo']:
+                                                    instute_name += affiliationInfo['Affiliation'] + " "
+                                            else:
+                                                instute_name += author_info['AffiliationInfo']['Affiliation']
+                                            instutation_list.append(instute_name)
+                                        else:
+                                            instutation_list.append("")
+
+
+
+                            if article.get("ArticleDate") is not None:
+                                articledate = article["ArticleDate"]
+                                article_date = articledate['Year']
+                            else:
+                                article_date = ""
+
+                            return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link,
+                                           author_list,
+                                           instutation_list, article_date)
+                            # return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
         except:
+            print("Oops!",sys.exc_info(), "occurred for article id: ", article_id)
+            print("Details about article:", article_title, " journal_issn:", journal_issn, " journal_name: ",
+                  journal_name," pubmed_link:", pubmed_link," author_list",author_list," instutation_list",instutation_list,
+                  " article_date:",article_date)
             print("Oops!", sys.exc_info()[0], "occurred for article id: ", article_id)
-    else:
-        print("\tArticle could not be retrieved.")
 
 
 def get_abstract_text(unparsed_abstract_text):
@@ -183,6 +291,16 @@ def annotate(retrieved_article_ids):
                 print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
                 article = retrieve_article(retrieved_article_ids[id])
                 article.abstract = get_abstract_text(article.abstract)
+                #dont insert same article details if it is already inserted into
+                if article.pm_id not in already_inserted_detailed_article_id_list:
+                    article.get_top_keywords()
+                    detailed_article_object = create_detailed_article_object(article)
+                    already_inserted_detailed_article_id_list.append(article.pm_id)
+                    detailed_article_list.append(detailed_article_object)
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+                    future = executor.submit(write_details_into_database)
+                    result = future.result()
                 # print(str(id)+"\n")
                 # print(article.abstract)
                 for c in concepts:
@@ -203,15 +321,17 @@ def annotate(retrieved_article_ids):
 
                 article_json = {
                     "title": article.title,
-                    "authors": article.authors,
-                    "keywords": article.keywords,
+                    "authors": article.author_list,
+                    "keywords": article.top_three_keywords,
                     "abstract": article.abstract,
-                    "timestamp": datetime.now()
+                    "article_date": article.article_date,
+                    "journal_name": article.journal_name,
+                    "_created": datetime.now()
                 }
                 articles.append(article_json)
 
             except:
-                print("Oops!", sys.exc_info()[0], "occurred.")
+                print("Oops!", sys.exc_info(), "occurred.")
             finally:
                 lock.release()
     return convert_to_json_abjects(annotated_article_ids)
@@ -266,7 +386,6 @@ def create_annotation_object(id, article, concept, position):
         }
     }
 
-
 def write_annotated_article_ids_to_database(list, collection="annotated_article_ids"):
     col = db[collection]
     for item in list:
@@ -280,6 +399,34 @@ def write_annotations_to_database(list, collection="annotation"):
             future = executor.submit(col.insert_one, list.pop())
             result_ = future.result()
 
+def write_details_into_database():
+    col=db["annotated_article_ids"]
+    while len(detailed_article_list)>0:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+            future = executor.submit(col.insert_one, detailed_article_list.pop())
+            result_ = future.result()
+
+def create_detailed_article_object(article):
+    return {
+        "id": article.pm_id,
+        "title": article.title,
+        "journal_name": article.journal_name,
+        "pubmed_link": article.pubmed_link,
+        "author_list": article.author_list,
+        "institution_list": article.instutation_list,
+        "article_date": article.article_date,
+        "top_three_keywords": article.top_three_keywords,
+        "abstract": article.abstract
+    }
+
+def get_detailed_article_ids_from_db():
+    query = {}
+    column = db["annotated_article_ids"]
+    document = column.find(query)
+    for x in document:
+        list_item = dict(x)
+        if list_item["id"] not in already_inserted_detailed_article_id_list :
+            already_inserted_detailed_article_id_list.append(list_item["id"])
 
 def write_abstracts_to_database(list, collection="abstracts"):
     col = db[collection]
@@ -304,7 +451,10 @@ if __name__ == "__main__":
     now = datetime.now()
     start_time = now.strftime("%H:%M:%S")
     print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
+    # already_inserted_detailed_article_id_list
     retrieved_article_ids = []
+    #get all detailed articles from db
+    get_detailed_article_ids_from_db()
     for search_keyword in search_keywords:
         ids = retrieve_article_ids(search_keyword, number_of_article)
         for i in ids:
