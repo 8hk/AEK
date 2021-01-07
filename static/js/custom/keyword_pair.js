@@ -1,7 +1,8 @@
-import * as c from "./Chart.min.js"
+import * as c from "./../chart.js-2.9.4/package/dist/Chart.min.js"
 
 class Pair {
     constructor(data) {
+        console.log("data: "+data)
         var keywords = JSON.parse(data);
         var cards=""
         for (let key in keywords.keyword_pairs) {

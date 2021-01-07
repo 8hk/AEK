@@ -8,11 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <!-- Bootstrap core CSS -->
     {#    <link rel="canonical">#}
-    <link href="{% static 'bootstrap.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
     <link type="text/css">
-    <link href="{% static 'all.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/all.min.css' %}" rel="stylesheet">
     <link type="text/css">
-    <link href="{% static 'card.css' %}" rel="stylesheet">
+    <link href="{% static 'css/custom/card.css' %}" rel="stylesheet">
 
 
 </head>
@@ -34,7 +34,7 @@
 <footer class="pt-4 my-md-5 pt-md-5 border-top">
     <div class="row">
         <div class="col-12 col-md">
-            <img class="mb-2" src="{% static 'bootstrap-solid.svg' %}" alt="" width="24" height="24">
+            <img class="mb-2" src="{% static 'css/bootstrap-solid.svg' %}" alt="" width="24" height="24">
             <small class="d-block mb-3 text-muted">© 2017-2018</small>
         </div>
 
@@ -43,16 +43,17 @@
 </div>
 {#<script>window.jQuery || document.write('<script src="{% static 'jquery-slim.min.js'%}"><script>')</script>#}
 {#<script>window.jQuery || document.write('<script src="/fe/js/jquery-slim.min.js"><\/script>')</script>#}
-<script>window.jQuery || document.write('<script src="{% static 'jquery-slim.min.js'%}"><\/script>')</script>
-<script src="{% static 'popper.min.js' %}"></script>
-<script src="{% static 'bootstrap.min.js' %}"></script>
-<script src="{% static 'holder.min.js' %}"></script>
-<script src="{% static 'shieldui-all.min.js' %}"></script>
-<script src="{% static 'keyword_pair.js' %}" type="module"></script>
+<script>window.jQuery || document.write('<script src="{% static 'js/jquery-slim.min.js'%}"><\/script>')</script>
+<script src="{% static 'js/popper.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/holder.min.js' %}"></script>
+<script src="{% static 'js/shieldui-all.min.js' %}"></script>
+<script src="{% static 'js/custom/keyword_pair.js' %}" type="module"></script>
 <script type="module">
-    import {Pair} from "{% static 'keyword_pair.js' %}";
+    import {Pair} from "{% static 'js/custom/keyword_pair.js' %}";
 
-    var data = '{{mytext|escapejs}}';
+    var data = '{{keyword_pairs|escapejs}}';
+    console.log(data)
     let call = new Pair(data);
 </script>
 
