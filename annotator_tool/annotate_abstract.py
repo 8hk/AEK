@@ -323,9 +323,10 @@ def annotate(retrieved_article_ids):
                     "title": article.title,
                     "authors": article.author_list,
                     "keywords": article.top_three_keywords,
-                    "abstract": article.abstract,
+                    "abstract": article.abstract.lower(),
                     "article_date": article.article_date,
                     "journal_name": article.journal_name,
+                    "article_id": article.pm_id,
                     "_created": datetime.now()
                 }
                 articles.append(article_json)
@@ -463,7 +464,7 @@ if __name__ == "__main__":
     try:
         elastic = Elasticsearch(hosts=["es01"])
         print(articles)
-        response = helpers.bulk(elastic, bulk_json_data(articles, "test", "doc"))
+        response = helpers.bulk(elastic, bulk_json_data(articles, "test5", "doc"))
         print("\nRESPONSE:", response)
     except Exception as e:
         print("\nERROR:", e)
