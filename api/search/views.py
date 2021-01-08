@@ -312,7 +312,7 @@ class SearchHelper(object):
         del res
         return result
 
-    def find_unique_article_number(self):
+    def find_stored_article_number(self):
         mongo_query = {}
         document = self.annotation_detail_column.find(mongo_query)
         unique_papers=[]
@@ -538,7 +538,7 @@ def summaryPage(request):
 #how many article stored into mongodb
 def findStoredArticleNumber(request):
     helper = SearchHelper("")
-    number_of_paper=helper.find_unique_article_number()
+    number_of_paper=helper.find_stored_article_number()
     dict={}
     dict["value"]=number_of_paper
     # return render(request,json.dumps(dict))
