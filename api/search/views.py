@@ -534,3 +534,12 @@ def page(request):
 def summaryPage(request):
     args = request.session.get('keyword_pairs')
     return render(request, 'html/summary-page.html', args)
+
+#how many article stored into mongodb
+def findStoredArticleNumber(request):
+    helper = SearchHelper("")
+    number_of_paper=helper.find_unique_article_number()
+    dict={}
+    dict["value"]=number_of_paper
+    # return render(request,json.dumps(dict))
+    return HttpResponse(json.dumps(dict), content_type="application/json")
