@@ -25,7 +25,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.http import HttpResponse, HttpResponseRedirect
 from pymongo import MongoClient
-
+from elasticsearch import Elasticsearch
 from api.mainquery.views import Dimension
 from api.search.models import AnnotatedArticle
 from django.template.response import TemplateResponse
@@ -61,7 +61,7 @@ class Search:
         helper = SearchHelper(main_query)
         helper.create_search_combinations(dimensions_json)
         helper.create_search_keys()
-        articles = helper.get_annotations()
+        articles = helper.start_query()
         del helper
         return articles
 
@@ -126,13 +126,25 @@ class SearchHelper(object):
                 del articles
         common_article_list.clear()
 
-    def get_annotations(self):
+    def start_query(self):
         search_result_list=[]
         response= {}
         response["keyword_pairs"]=[]
         for keyword in self.all_terms:
-            article_list = self.get_article_ids(keyword)
-            self.articles_by_term[keyword] = article_list
+            #query annotations by keyword retrieve article id
+            #query elastic by keyword retrieve article id
+            #combine them together without duplicate
+            #append combined list into articles_by_term
+            article_list_from_annoation = self.get_article_ids(keyword)
+            article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
+            article_list_from_annoation_as_set = set(article_list_from_annoation)
+            article_list_from_elastic_as_set = set(article_list_from_elastic)
+            list_elastic_items_not_in_list_annotation = list(article_list_from_elastic_as_set - article_list_from_annoation_as_set)
+            combined = article_list_from_annoation + list_elastic_items_not_in_list_annotation
+            del article_list_from_annoation
+            del article_list_from_elastic
+            del article_list_from_elastic_as_set
+            self.articles_by_term[keyword] = combined
 
         if len(self.combinations) > 0:
             with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.combinations)) as executor:
@@ -140,7 +152,12 @@ class SearchHelper(object):
                 for combination in self.combinations:
                     futures.append(executor.submit(self.start_annotations, combination))
         dict_futures = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.search_result_list)) as executor:
+        work_num=0
+        if len(self.search_result_list)>0:
+            work_num =len(self.search_result_list)
+        else:
+            work_num=1
+        with concurrent.futures.ThreadPoolExecutor(max_workers=work_num) as executor:
             while self.search_result_list:
                 dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value,response))
         for x in as_completed(dict_futures):
@@ -203,6 +220,23 @@ class SearchHelper(object):
                                              other_dimension_keyword,
                                              other_dimension_index, index + 1)
 
+    def elastic_search(self, main_query):
+        es = Elasticsearch(hosts=["es01"])
+
+        res = es.search(
+            index="test5",
+            body={
+                "query": {
+                    "match": {
+                        "abstract": main_query
+                    }
+                }
+            }
+        )
+
+        print("Got %d Hits:" % res['hits']['total']['value'])
+        for hit in res['hits']['hits']:
+            print("%(_created)s %(title)s by %(authors)s (%(keywords)s): %(abstract)s" % hit["_source"])
 
     # we dont need to retrieve all retrieve for each key again and again. instead we will use this list while
     # retrieving the articles
@@ -257,6 +291,38 @@ class SearchHelper(object):
         for x in (futures):
             articles.append(x.result())
         return articles
+
+
+    def get_article_ids_from_elastic(self, keyword):
+        es = Elasticsearch(hosts=["es01"])
+        res = es.search(
+            index="test5",
+            body={
+                "query": {
+                    "multi_match":
+                        {"query": keyword,
+                         "fields": ["abstract", "keywords"]
+                         }
+                }
+            }
+        )
+        result = []
+        for hit in res['hits']['hits']:
+            result.append(hit["_source"]['article_id'])
+        del res
+        return result
+
+    def find_stored_article_number(self):
+        mongo_query = {}
+        document = self.annotation_detail_column.find(mongo_query)
+        unique_papers=[]
+        for x in document:
+            list_item = dict(x)
+            if list_item["id"] not in unique_papers:
+                unique_papers.append(list_item["id"])
+        return len(unique_papers)
+
+
 
 
 #it is similar class with annotate_abstract
@@ -409,7 +475,6 @@ class SearchResult(object):
         top_keywords = SearchResult.get_top_keywords_of_articles(articles)
         # top_authors =[]
         top_authors = SearchResult.get_top_authors_of_articles(articles)
-        #todo bazen tarih bos geliyor?
         time_change_dict = SearchResult.get_time_change_of_articles(articles)
         time_change_list = list(time_change_dict.items())[:5]
         years = [i[0] for i in time_change_list]
@@ -454,10 +519,11 @@ class SearchResult(object):
     def get_time_change_of_articles(articles):
         dates = {}
         for article in articles:
-            if article.article_date not in dates:
-                dates[article.article_date] = 1
-            else:
-                dates[article.article_date] += 1
+            if len(article.article_date)>0:
+                if article.article_date not in dates:
+                    dates[article.article_date] = 1
+                else:
+                    dates[article.article_date] += 1
         return dict(sorted(dates.items(), key=lambda item: item[1], reverse=True))
 
 
@@ -468,3 +534,12 @@ def page(request):
 def summaryPage(request):
     args = request.session.get('keyword_pairs')
     return render(request, 'html/summary-page.html', args)
+
+#how many article stored into mongodb
+def findStoredArticleNumber(request):
+    helper = SearchHelper("")
+    number_of_paper=helper.find_stored_article_number()
+    dict={}
+    dict["value"]=number_of_paper
+    # return render(request,json.dumps(dict))
+    return HttpResponse(json.dumps(dict), content_type="application/json")

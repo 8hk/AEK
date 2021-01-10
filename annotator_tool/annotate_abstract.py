@@ -22,6 +22,9 @@ from concurrent.futures import ThreadPoolExecutor
 import threading
 from datetime import datetime
 import concurrent
+from elasticsearch import Elasticsearch, helpers
+import uuid
+
 lock = threading.Lock()
 import collections
 from nltk import FreqDist
@@ -51,6 +54,8 @@ search_keywords = ["bipolar disorder", "manic depression", "bipolar", "manic dep
 number_of_article = 50
 
 annotation_list = []
+
+articles = []
 
 
 class Article:
@@ -310,9 +315,21 @@ def annotate(retrieved_article_ids):
                             # print(annotation_object)
                             annotation_counter = annotation_counter + 1
                             annotation_list.append(annotation_object)
-                            if len(annotation_list)>0:
-                                write_annotation_to_database(annotation_list)
+                            if len(annotation_list) > 0:
+                                write_annotations_to_database(annotation_list)
                         print("\n--------------------------------------------")
+
+                article_json = {
+                    "title": article.title,
+                    "authors": article.author_list,
+                    "keywords": article.top_three_keywords,
+                    "abstract": article.abstract.lower(),
+                    "article_date": article.article_date,
+                    "journal_name": article.journal_name,
+                    "article_id": article.pm_id,
+                    "_created": datetime.now()
+                }
+                articles.append(article_json)
 
             except:
                 print("Oops!", sys.exc_info(), "occurred.")
@@ -326,6 +343,7 @@ def convert_to_json_abjects(annotated_article_ids):
     for i in annotated_article_ids:
         annotated_article_ids_json.append({'id': i})
     return annotated_article_ids_json
+
 
 def get_index_positions(abstract, element):
     abstract = abstract.lower()
@@ -369,9 +387,9 @@ def create_annotation_object(id, article, concept, position):
         }
     }
 
-def write_annotation_to_database(list):
-    col=db["annotation"]
-    while len(list)>0:
+def write_annotations_to_database(list, collection="annotation"):
+    col = db[collection]
+    while len(list) > 0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
             future = executor.submit(col.insert_one, list.pop())
             result_ = future.result()
@@ -405,6 +423,24 @@ def get_detailed_article_ids_from_db():
         if list_item["id"] not in already_inserted_detailed_article_id_list :
             already_inserted_detailed_article_id_list.append(list_item["id"])
 
+def write_abstracts_to_database(list, collection="abstracts"):
+    col = db[collection]
+    while len(list) > 0:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
+            future = executor.submit(col.insert_one, list.pop())
+            result_ = future.result()
+
+
+def bulk_json_data(json_list, _index, doc_type):
+    for json in json_list:
+        if '{"index"' not in json:
+            yield {
+                "_index": _index,
+                "_type": doc_type,
+                "_id": uuid.uuid4(),
+                "_source": json
+            }
+
 
 if __name__ == "__main__":
     now = datetime.now()
@@ -422,10 +458,20 @@ if __name__ == "__main__":
 
     annotated_article_ids = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
-        future = executor.submit(annotate,retrieved_article_ids)
+        future = executor.submit(annotate, retrieved_article_ids)
         annotated_article_ids = future.result()
+
+    try:
+        elastic = Elasticsearch(hosts=["es01"])
+        print(articles)
+        response = helpers.bulk(elastic, bulk_json_data(articles, "test5", "doc"))
+        print("\nRESPONSE:", response)
+    except Exception as e:
+        print("\nERROR:", e)
+
+    write_abstracts_to_database(articles)
 
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")
-    print("start time: ",start_time)
-    print("finish time: ",finish_time)
+    print("start time: ", start_time)
+    print("finish time: ", finish_time)

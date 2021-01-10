@@ -26,4 +26,5 @@ urlpatterns = [
     path('search/', views.startSearch, name='search'),
     path('', views.page),
     path('summary-page/', views.summaryPage, name='summaryPage'),
+    path('articlenumbers/', views.findStoredArticleNumber, name='storedArticles'),
 ]
