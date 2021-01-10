@@ -69,6 +69,7 @@ class Article:
     instutation_list = []
     article_date = ""
     top_three_keywords = []
+    uri = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract,
                  pubmed_link,author_list,instutation_list,article_date):
@@ -309,17 +310,19 @@ def annotate(retrieved_article_ids):
                         for position in positions:
                             # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
                             # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
+                            article.uri = "/annotations/" + str(annotation_counter)
                             annotation_object = create_annotation_object(annotation_counter, article, c, position)
                             if article.pm_id not in annotated_article_ids:
                                 annotated_article_ids.append(article.pm_id)
                             # print(annotation_object)
                             annotation_counter = annotation_counter + 1
-                            annotation_list.append(annotation_object)
+                            annotation_list.append((annotation_object, article.pm_id))
                             if len(annotation_list) > 0:
                                 write_annotations_to_database(annotation_list)
                         print("\n--------------------------------------------")
 
                 article_json = {
+                    "id": article.pm_id,
                     "title": article.title,
                     "authors": article.author_list,
                     "keywords": article.top_three_keywords,
@@ -377,7 +380,7 @@ def create_annotation_object(id, article, concept, position):
             }
         ],
         "target": {
-            "id": article.pm_id,
+            "id": article.uri,#article.pm_id,
             "selector": {
                 "type": "TextPositionSelector",
                 "start": position['start'],
@@ -388,9 +391,16 @@ def create_annotation_object(id, article, concept, position):
 
 def write_annotations_to_database(list, collection="annotation"):
     col = db[collection]
+    col2 = db["annotation_to_article"]
     while len(list) > 0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
-            future = executor.submit(col.insert_one, list.pop())
+            item = list.pop()
+
+            future = executor.submit(col.insert_one, item[0])
+            result_ = future.result()
+
+            relationship = {"annotation_id": item[0]["id"], "pm_id": item[1]}
+            future = executor.submit(col2.insert_one, relationship)
             result_ = future.result()
 
 def write_details_into_database():
@@ -421,13 +431,6 @@ def get_detailed_article_ids_from_db():
         list_item = dict(x)
         if list_item["id"] not in already_inserted_detailed_article_id_list :
             already_inserted_detailed_article_id_list.append(list_item["id"])
-
-def write_abstracts_to_database(list, collection="abstracts"):
-    col = db[collection]
-    while len(list) > 0:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
-            future = executor.submit(col.insert_one, list.pop())
-            result_ = future.result()
 
 
 def bulk_json_data(json_list, _index, doc_type):
@@ -467,8 +470,6 @@ if __name__ == "__main__":
         print("\nRESPONSE:", response)
     except Exception as e:
         print("\nERROR:", e)
-
-    write_abstracts_to_database(articles)
 
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")

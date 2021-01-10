@@ -174,6 +174,52 @@ def detail(request):
         return HttpResponse("%s" % resp)
 
 
+def annotations(request, annotationId):
+    if request.method == "GET":
+
+        mongo_client = MongoClient(
+            host='mongodb:27017',  # <-- IP and port go here
+            serverSelectionTimeoutMS=3000,  # 3 second timeout
+            username='root',
+            password='mongoadmin',
+        )
+        db = mongo_client["mentisparchment_docker"]
+
+        pm_id = -1
+        column = db["annotation_to_article"]
+        query = {"annotation_id": annotationId}
+        annotation_to_article = column.find(query)
+        for item in annotation_to_article:
+            list_item = dict(item)
+            pm_id = list_item["pm_id"]
+            break
+
+        title = ""
+        authors = ""
+        keywords = ""
+        abstract = ""
+        column = db["annotated_article_ids"]
+        query = {"id": pm_id}
+        articles = column.find(query)
+        for item in articles:
+            list_item = dict(item)
+            title = list_item["title"]
+            authors = list_item["author_list"]
+            keywords = list_item["top_three_keywords"]
+            abstract = list_item["abstract"]
+            break
+
+        start = 0
+        end = 0
+        column = db["annotation"]
+        query = {"id": annotationId}
+        annotations = column.find(query)
+        for item in annotations:
+            list_item = dict(item)
+            start = list_item["target"]["selector"]["start"]
+            end = list_item["target"]["selector"]["end"]
+
+        return render(request, "html/annotation.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract, "start": start, "end": end})
 
 class Search:
     @staticmethod
