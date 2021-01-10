@@ -40,6 +40,7 @@ import xmltodict
 from collections import Counter
 import sys
 
+
 @csrf_exempt
 def startSearch(request):
     if request.method == "POST":
@@ -55,13 +56,10 @@ def startSearch(request):
         request.session['keyword_pairs'] = data
         return HttpResponseRedirect(reverse("summaryPage"))
 
+
 def highlight(text, start, end):
-    #word_list = text.split()
-    #word_list.insert(start, '<b>')
-    #word_list.insert(end, '</b>')
-    #highlighted = " ".join(word_list)
-    #return highlighted
     return text[:start] + '<span style="background-color: #FFFF00">' + text[start:end] + '</span>' + text[end:]
+
 
 def annotations(request, articleId):
     if request.method == "GET":
@@ -92,7 +90,8 @@ def annotations(request, articleId):
 
         # Check whether an annotation id is given.
         if annotationId == None:
-            return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
+            return render(request, "html/article.html",
+                          {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
         else:
             pm_id = ""
             column = db["annotation_to_article"]
@@ -115,10 +114,12 @@ def annotations(request, articleId):
                     list_item = dict(item)
                     start = list_item["target"]["selector"]["start"]
                     end = list_item["target"]["selector"]["end"]
-                return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": highlight(abstract, start, end)})
+                return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords,
+                                                             "abstract": highlight(abstract, start, end)})
             else:
                 print("This annotation is not related to this article")
-                return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
+                return render(request, "html/article.html",
+                              {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
 
 
 class Search:
@@ -138,16 +139,17 @@ class SearchHelper(object):
     annotation_column = ""
     annotation_detail_column = ""
     articles = []
-    article_details={}
-    search_result_list=[]
+    article_details = {}
+    search_result_list = []
     articles_by_term = {}
+
     def __init__(self, main_query):
         self.main_query = main_query
         self.dimensions = []
         self.combinations = []
         # we will use this later while parsing the articles
         self.all_terms = []
-        self.search_result_list=[]
+        self.search_result_list = []
         self.articles_by_term = {}
 
         self.mongo_client = MongoClient(
@@ -160,9 +162,9 @@ class SearchHelper(object):
         self.annotation_column = self.db["annotation"]
         self.annotation_detail_column = self.db["annotated_article_ids"]
 
-    def start_annotations(self,combination):
+    def start_annotations(self, combination):
         common_article_list = []
-        print("new combination",combination)
+        print("new combination", combination)
         # split the combination list
         combination_line = combination.split(")")
         urls = []
@@ -173,7 +175,7 @@ class SearchHelper(object):
             common_article_list = list(set.intersection(*map(set, urls)))
         elif len(combination_line) == 1:
             common_article_list = self.articles_by_term[combination_line[0]]
-        print("common article list created for ", combination," total article list ",len(common_article_list))
+        print("common article list created for ", combination, " total article list ", len(common_article_list))
         if len(common_article_list) > 0:
             article_details_futures = []
             articles = []
@@ -181,7 +183,7 @@ class SearchHelper(object):
                 article_details_futures.append(executor.submit(self.get_article_details, common_article_list))
             for x in as_completed(article_details_futures):
                 articles = x.result()
-            print("articles created for ",combination)
+            print("articles created for ", combination)
             if len(articles) > 0:
                 search_result = SearchResult(combination)
                 search_result.add_articles(articles)
@@ -193,19 +195,20 @@ class SearchHelper(object):
         common_article_list.clear()
 
     def start_query(self):
-        search_result_list=[]
-        response= {}
-        response["keyword_pairs"]=[]
+        search_result_list = []
+        response = {}
+        response["keyword_pairs"] = []
         for keyword in self.all_terms:
-            #query annotations by keyword retrieve article id
-            #query elastic by keyword retrieve article id
-            #combine them together without duplicate
-            #append combined list into articles_by_term
+            # query annotations by keyword retrieve article id
+            # query elastic by keyword retrieve article id
+            # combine them together without duplicate
+            # append combined list into articles_by_term
             article_list_from_annoation = self.get_article_ids(keyword)
             article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
             article_list_from_annoation_as_set = set(article_list_from_annoation)
             article_list_from_elastic_as_set = set(article_list_from_elastic)
-            list_elastic_items_not_in_list_annotation = list(article_list_from_elastic_as_set - article_list_from_annoation_as_set)
+            list_elastic_items_not_in_list_annotation = list(
+                article_list_from_elastic_as_set - article_list_from_annoation_as_set)
             combined = article_list_from_annoation + list_elastic_items_not_in_list_annotation
             del article_list_from_annoation
             del article_list_from_elastic
@@ -218,14 +221,14 @@ class SearchHelper(object):
                 for combination in self.combinations:
                     futures.append(executor.submit(self.start_annotations, combination))
         dict_futures = []
-        work_num=0
-        if len(self.search_result_list)>0:
-            work_num =len(self.search_result_list)
+        work_num = 0
+        if len(self.search_result_list) > 0:
+            work_num = len(self.search_result_list)
         else:
-            work_num=1
+            work_num = 1
         with concurrent.futures.ThreadPoolExecutor(max_workers=work_num) as executor:
             while self.search_result_list:
-                dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value,response))
+                dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value, response))
         for x in as_completed(dict_futures):
             print("dict value created")
         return response
@@ -242,7 +245,7 @@ class SearchHelper(object):
         dimension_number = len(self.dimensions)
         for i in range(dimension_number):
             self.start_keyword_pairing(dimension_number, i)
-        if len(self.main_query)>0:
+        if len(self.main_query) > 0:
             self.combinations.append(self.main_query)
         print("All search combinations: ", self.combinations)
 
@@ -312,7 +315,7 @@ class SearchHelper(object):
             for keyword in dimension_line.keywords:
                 self.all_terms.append(keyword)
 
-    #takes article ids from mongodb with its keyword
+    # takes article ids from mongodb with its keyword
     def get_article_ids(self, combination):
         query = {}
         query["body.value.id"] = combination
@@ -325,7 +328,7 @@ class SearchHelper(object):
         return article_id_list
 
     # takes article details from mongodb with its keyword
-    def article_details_query(self,article_id):
+    def article_details_query(self, article_id):
         mongo_query = {}
         mongo_query["id"] = article_id
         document = self.annotation_detail_column.find(mongo_query)
@@ -346,10 +349,9 @@ class SearchHelper(object):
             del document
             return article
 
-
-    #create collection of details of articles
+    # create collection of details of articles
     def get_article_details(self, article_list):
-        articles=[]
+        articles = []
         futures = []
         while article_list:
             with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
@@ -357,7 +359,6 @@ class SearchHelper(object):
         for x in (futures):
             articles.append(x.result())
         return articles
-
 
     def get_article_ids_from_elastic(self, keyword):
         es = Elasticsearch(hosts=["es01"])
@@ -381,7 +382,7 @@ class SearchHelper(object):
     def find_stored_article_number(self):
         mongo_query = {}
         document = self.annotation_detail_column.find(mongo_query)
-        unique_papers=[]
+        unique_papers = []
         for x in document:
             list_item = dict(x)
             if list_item["id"] not in unique_papers:
@@ -389,9 +390,7 @@ class SearchHelper(object):
         return len(unique_papers)
 
 
-
-
-#it is similar class with annotate_abstract
+# it is similar class with annotate_abstract
 class Article(object):
     pm_id = ""
     title = ""
@@ -403,10 +402,10 @@ class Article(object):
     instutation_list = []
     article_date = ""
     top_three_keywords = []
-    json_val=""
+    json_val = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link, author_list, instutation_list,
-                 article_date,top_three_keywords):
+                 article_date, top_three_keywords):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
@@ -416,8 +415,8 @@ class Article(object):
         self.author_list = author_list
         self.instutation_list = instutation_list
         self.article_date = article_date
-        self.top_three_keywords =top_three_keywords
-        #todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
+        self.top_three_keywords = top_three_keywords
+        # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
         # self.json_val=self.toJSON()
 
     def toJSON(self):
@@ -485,7 +484,7 @@ class SearchResult(object):
     def add_author(self, author):
         self.authors.append(author)
 
-    def add_top_authors(self,authors):
+    def add_top_authors(self, authors):
         for author in authors:
             self.top_authors.append(author)
 
@@ -499,26 +498,26 @@ class SearchResult(object):
     def add_year(self, year):
         self.result_change_time_years.append(year)
 
-    def add_years(self,years):
+    def add_years(self, years):
         for year in years:
             self.result_change_time_years.append(year)
 
     def add_number_of_year(self, number):
         self.result_change_time_numbers.append(number)
 
-    def add_number_publication_per_years(self,numbers):
+    def add_number_publication_per_years(self, numbers):
         for number in numbers:
             self.result_change_time_numbers.append(number)
 
     def generate_json_value(self):
-        s1="{"
-        s3="}"
-        str = f'"value":{self.keyword.replace(")"," ")},"papers_number":{self.number_of_article},"top_authors":{self.top_authors},"top_keywords":{self.top_keywords},"publication_year":{self.result_change_time_years},"publication_year_values":{self.result_change_time_numbers}'
-        return s1+str+s3
+        s1 = "{"
+        s3 = "}"
+        str = f'"value":{self.keyword.replace(")", " ")},"papers_number":{self.number_of_article},"top_authors":{self.top_authors},"top_keywords":{self.top_keywords},"publication_year":{self.result_change_time_years},"publication_year_values":{self.result_change_time_numbers}'
+        return s1 + str + s3
 
-    def generate_dict_value(self,response):
+    def generate_dict_value(self, response):
         dict = {}
-        json_articles=[]
+        json_articles = []
         # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
         # for article in self.articles:
         #     json_articles.append(article.json_val)
@@ -532,8 +531,6 @@ class SearchResult(object):
         del json_articles
         response["keyword_pairs"].append(dict)
         del dict
-
-
 
     # collects the articles and prepares them for the search result operation
     @staticmethod
@@ -585,7 +582,7 @@ class SearchResult(object):
     def get_time_change_of_articles(articles):
         dates = {}
         for article in articles:
-            if len(article.article_date)>0:
+            if len(article.article_date) > 0:
                 if article.article_date not in dates:
                     dates[article.article_date] = 1
                 else:
@@ -593,19 +590,20 @@ class SearchResult(object):
         return dict(sorted(dates.items(), key=lambda item: item[1], reverse=True))
 
 
-
 def page(request):
     return render(request, 'html/index.html')
+
 
 def summaryPage(request):
     args = request.session.get('keyword_pairs')
     return render(request, 'html/summary-page.html', args)
 
-#how many article stored into mongodb
+
+# how many article stored into mongodb
 def findStoredArticleNumber(request):
     helper = SearchHelper("")
-    number_of_paper=helper.find_stored_article_number()
-    dict={}
-    dict["value"]=number_of_paper
+    number_of_paper = helper.find_stored_article_number()
+    dict = {}
+    dict["value"] = number_of_paper
     # return render(request,json.dumps(dict))
     return HttpResponse(json.dumps(dict), content_type="application/json")

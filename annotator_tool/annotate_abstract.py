@@ -40,6 +40,8 @@ client = MongoClient(
 
 db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
 
+annotation_url = os.environ.get("ANNOTATION_URL", " ")
+
 detailed_article_list = []
 already_inserted_detailed_article_id_list = []
 
@@ -310,7 +312,7 @@ def annotate(retrieved_article_ids):
                         for position in positions:
                             # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
                             # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
-                            article.uri = "/articles/" + article.pm_id
+                            article.uri = annotation_url + "/articles/" + article.pm_id
                             annotation_object = create_annotation_object(annotation_counter, article, c, position)
                             if article.pm_id not in annotated_article_ids:
                                 annotated_article_ids.append(article.pm_id)
