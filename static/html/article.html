@@ -8,7 +8,7 @@
     <h1>{{ title }}</h1>
     <p>by {{ authors | list_to_text }}</p>
     <p><b>Abstract</b></p>
-    <p>{{ abstract }}</p>
+    <p>{{ abstract | safe }}</p>
     <p><b>Keywords: </b><i>{{ keywords | list_to_text }}</i></p>
 </head>
 <body>

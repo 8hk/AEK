@@ -55,9 +55,17 @@ def startSearch(request):
         request.session['keyword_pairs'] = data
         return HttpResponseRedirect(reverse("summaryPage"))
 
+def highlight(text, start, end):
+    #word_list = text.split()
+    #word_list.insert(start, '<b>')
+    #word_list.insert(end, '</b>')
+    #highlighted = " ".join(word_list)
+    #return highlighted
+    return text[:start] + '<span style="background-color: #FFFF00">' + text[start:end] + '</span>' + text[end:]
 
-def annotations(request, annotationId):
+def annotations(request, articleId):
     if request.method == "GET":
+        annotationId = request.GET.get("annotationId")
 
         mongo_client = MongoClient(
             host='mongodb:27017',  # <-- IP and port go here
@@ -67,21 +75,12 @@ def annotations(request, annotationId):
         )
         db = mongo_client["mentisparchment_docker"]
 
-        pm_id = -1
-        column = db["annotation_to_article"]
-        query = {"annotation_id": annotationId}
-        annotation_to_article = column.find(query)
-        for item in annotation_to_article:
-            list_item = dict(item)
-            pm_id = list_item["pm_id"]
-            break
-
         title = ""
         authors = ""
         keywords = ""
         abstract = ""
         column = db["annotated_article_ids"]
-        query = {"id": pm_id}
+        query = {"id": str(articleId)}
         articles = column.find(query)
         for item in articles:
             list_item = dict(item)
@@ -91,17 +90,36 @@ def annotations(request, annotationId):
             abstract = list_item["abstract"]
             break
 
-        start = 0
-        end = 0
-        column = db["annotation"]
-        query = {"id": annotationId}
-        annotations = column.find(query)
-        for item in annotations:
-            list_item = dict(item)
-            start = list_item["target"]["selector"]["start"]
-            end = list_item["target"]["selector"]["end"]
+        # Check whether an annotation id is given.
+        if annotationId == None:
+            return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
+        else:
+            pm_id = ""
+            column = db["annotation_to_article"]
+            query = {"annotation_id": int(annotationId)}
+            annotation_to_article = column.find(query)
+            for item in annotation_to_article:
+                list_item = dict(item)
+                pm_id = list_item["pm_id"]
+                break
 
-        return render(request, "html/annotation.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract, "start": start, "end": end})
+            # Check whether the given annotation is related to the given article.
+            if pm_id != "" and pm_id == str(articleId):
+                print("Such annotation exists for such article")
+                start = 0
+                end = 0
+                column = db["annotation"]
+                query = {"id": int(annotationId)}
+                annotations = column.find(query)
+                for item in annotations:
+                    list_item = dict(item)
+                    start = list_item["target"]["selector"]["start"]
+                    end = list_item["target"]["selector"]["end"]
+                return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": highlight(abstract, start, end)})
+            else:
+                print("This annotation is not related to this article")
+                return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
+
 
 class Search:
     @staticmethod

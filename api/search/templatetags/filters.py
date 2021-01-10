@@ -12,4 +12,3 @@ def list_to_text(list):
             text += ", "
     return text
 
-
