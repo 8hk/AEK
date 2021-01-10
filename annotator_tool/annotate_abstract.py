@@ -283,19 +283,20 @@ def get_abstract_text(unparsed_abstract_text):
         abstract_text = unparsed_abstract_text
     return abstract_text
 
-
 def annotate(retrieved_article_ids):
-    annotated_article_ids = []
-    annotation_counter = 0
+    annotation_counter = get_annotation_counter_start()
     if len(retrieved_article_ids) > 0:
-        for id in range(0, len(retrieved_article_ids)):
+        for idx in range(0, len(retrieved_article_ids)):
             try:
                 lock.acquire()
-                print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
-                article = retrieve_article(retrieved_article_ids[id])
+                print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[idx]))
+                article = retrieve_article(retrieved_article_ids[idx])
                 article.abstract = get_abstract_text(article.abstract)
-                #dont insert same article details if it is already inserted into
-                if article.pm_id not in already_inserted_detailed_article_id_list:
+                # Ignore an article if it is already annotated.
+                if article.pm_id in already_inserted_detailed_article_id_list:
+                    print("Article ", article.pm_id, " is already annotated.")
+                    continue
+                else:
                     article.get_top_keywords()
                     detailed_article_object = create_detailed_article_object(article)
                     already_inserted_detailed_article_id_list.append(article.pm_id)
@@ -383,7 +384,7 @@ def create_annotation_object(id, article, concept, position):
             }
         ],
         "target": {
-            "id": article.uri,#article.pm_id,
+            "id": article.uri,
             "selector": {
                 "type": "TextPositionSelector",
                 "start": position['start'],
@@ -425,6 +426,15 @@ def create_detailed_article_object(article):
         "top_three_keywords": article.top_three_keywords,
         "abstract": article.abstract
     }
+
+def get_annotation_counter_start():
+    lastEntryIndex = -1
+    query = {}
+    column = db["annotation"]
+    documents = column.find(query).sort("id", -1)
+    if documents.count() != 0:
+        lastEntryIndex = dict(documents[0])["id"]
+    return lastEntryIndex + 1
 
 def get_detailed_article_ids_from_db():
     query = {}
