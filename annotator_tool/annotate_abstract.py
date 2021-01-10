@@ -308,7 +308,10 @@ def annotate(retrieved_article_ids):
                 # print(str(id)+"\n")
                 # print(article.abstract)
                 for c in concepts:
-                    positions = get_index_positions(article.abstract, c.pref_label)
+                    positions = get_index_positions(article.title, c.pref_label, offset=0)
+                    author_list_str = " ".join(article.author_list)
+                    positions.extend(get_index_positions(author_list_str, c.pref_label, offset=len(article.title)))
+                    positions.extend(get_index_positions(article.abstract, c.pref_label, offset=len(article.title + author_list_str)))
                     if positions:
                         for position in positions:
                             # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
@@ -351,19 +354,19 @@ def convert_to_json_abjects(annotated_article_ids):
     return annotated_article_ids_json
 
 
-def get_index_positions(abstract, element):
-    abstract = abstract.lower()
+def get_index_positions(text, element, offset=0):
+    text = text.lower()
     # print(abstract)
     element = element.lower()
     # print(element)
 
-    if element not in abstract:
+    if element not in text:
         return []
 
     index_pos_list = []
 
-    for match in re.finditer(element, abstract):
-        index_pos_list.append({'start': match.start(), 'end': match.end()})
+    for match in re.finditer(element, text):
+        index_pos_list.append({'start': match.start() + offset, 'end': match.end() + offset})
 
     return index_pos_list
 

@@ -88,10 +88,12 @@ def annotations(request, articleId):
             abstract = list_item["abstract"]
             break
 
+        authors_str = " ".join(authors)
+
         # Check whether an annotation id is given.
-        if annotationId == None:
+        if annotationId is None:
             return render(request, "html/article.html",
-                          {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
+                          {"title": title, "authors": authors_str, "keywords": keywords, "abstract": abstract})
         else:
             pm_id = ""
             column = db["annotation_to_article"]
@@ -114,12 +116,24 @@ def annotations(request, articleId):
                     list_item = dict(item)
                     start = list_item["target"]["selector"]["start"]
                     end = list_item["target"]["selector"]["end"]
-                return render(request, "html/article.html", {"title": title, "authors": authors, "keywords": keywords,
-                                                             "abstract": highlight(abstract, start, end)})
+
+                # Find which part of the article this annotation is from.
+                if start < len(title):
+                    title = highlight(title, start, end)
+                elif start < len(title + authors_str):
+                    offset = len(title)
+                    authors_str = highlight(authors_str, start - offset, end - offset)
+                else:
+                    offset = len(title + authors_str)
+                    abstract = highlight(abstract, start - offset, end - offset)
+
+                return render(request, "html/article.html",
+                              {"title": title, "authors": authors_str, "keywords": keywords,
+                               "abstract": abstract})
             else:
                 print("This annotation is not related to this article")
                 return render(request, "html/article.html",
-                              {"title": title, "authors": authors, "keywords": keywords, "abstract": abstract})
+                              {"title": title, "authors": authors_str, "keywords": keywords, "abstract": abstract})
 
 
 class Search:
