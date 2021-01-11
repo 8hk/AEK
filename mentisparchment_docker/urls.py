@@ -24,6 +24,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('search/', views.startSearch, name='search'),
+    path('articles/<int:articleId>', views.annotations, name='articles'),
     path('', views.page),
     path('summary-page/', views.summaryPage, name='summaryPage'),
     path('articlenumbers/', views.findStoredArticleNumber, name='storedArticles'),

@@ -31,6 +31,7 @@ from nltk import FreqDist
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
+
 client = MongoClient(
     host=os.environ.get("MONGO_DB_HOST", " ") + ":" + os.environ.get("MONGO_DB_PORT", " "),  # <-- IP and port go here
     serverSelectionTimeoutMS=3000,  # 3 second timeout
@@ -39,6 +40,8 @@ client = MongoClient(
 )
 
 db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
+
+annotation_url = os.environ.get("ANNOTATION_URL", " ")
 
 detailed_article_list = []
 already_inserted_detailed_article_id_list = []
@@ -69,9 +72,10 @@ class Article:
     instutation_list = []
     article_date = ""
     top_three_keywords = []
+    uri = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract,
-                 pubmed_link,author_list,instutation_list,article_date):
+                 pubmed_link, author_list, instutation_list, article_date):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
@@ -86,7 +90,7 @@ class Article:
     # finds top 3 keywords of an article's abstract
     def get_top_keywords(self):
         # remove punctiotions
-        s=""
+        s = ""
         s = self.abstract
         s = s.translate(str.maketrans('', '', string.punctuation))
         stopword = set(stopwords.words('english'))
@@ -99,6 +103,7 @@ class Article:
         print("most common ", fdist.most_common(3))
         for most_common in fdist.most_common(3):
             self.top_three_keywords.append(most_common[0])
+
 
 class EntrezSearchRequest:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
@@ -150,8 +155,7 @@ def retrieve_article_ids(search_term, max_article_limit):
         else:
             print("\tThis article id could not be retrieved.")
     except:
-        print("something related with ", sys.exc_info()," definitely happened")
-
+        print("something related with ", sys.exc_info(), " definitely happened")
 
 
 def get_abstract_of_given_article_id(article_id):
@@ -168,21 +172,22 @@ def retrieve_article(article_id):
     if response.ok:
         try:
             xpars = xmltodict.parse(response.text)
-            article=""
+            article = ""
             article_title = ""
             journal_issn = ""
             journal_name = ""
-            pubmed_link=""
+            pubmed_link = ""
             abstract = ""
             author_list_text = []
             author_list = []
             instutation_list = []
-            articledate=""
-            article_date=""
+            articledate = ""
+            article_date = ""
             if xpars.get("PubmedArticleSet") is not None:
                 if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
                     if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
-                        if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation").get("Article") is not None:
+                        if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation").get(
+                                "Article") is not None:
                             article = xpars["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["Article"]
                             if article.get("ArticleTitle") is not None:
                                 article_title = article["ArticleTitle"]
@@ -239,8 +244,6 @@ def retrieve_article(article_id):
                                         else:
                                             instutation_list.append("")
 
-
-
                             if article.get("ArticleDate") is not None:
                                 articledate = article["ArticleDate"]
                                 article_date = articledate['Year']
@@ -252,10 +255,11 @@ def retrieve_article(article_id):
                                            instutation_list, article_date)
                             # return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
         except:
-            print("Oops!",sys.exc_info(), "occurred for article id: ", article_id)
+            print("Oops!", sys.exc_info(), "occurred for article id: ", article_id)
             print("Details about article:", article_title, " journal_issn:", journal_issn, " journal_name: ",
-                  journal_name," pubmed_link:", pubmed_link," author_list",author_list," instutation_list",instutation_list,
-                  " article_date:",article_date)
+                  journal_name, " pubmed_link:", pubmed_link, " author_list", author_list, " instutation_list",
+                  instutation_list,
+                  " article_date:", article_date)
             print("Oops!", sys.exc_info()[0], "occurred for article id: ", article_id)
 
 
@@ -282,17 +286,22 @@ def get_abstract_text(unparsed_abstract_text):
 
 
 def annotate(retrieved_article_ids):
-    annotated_article_ids = []
-    annotation_counter = 0
+    new_article_counter = 0
+    annotation_counter_start = get_annotation_counter_start()
+    annotation_counter = annotation_counter_start
     if len(retrieved_article_ids) > 0:
-        for id in range(0, len(retrieved_article_ids)):
+        for idx in range(0, len(retrieved_article_ids)):
             try:
                 lock.acquire()
-                print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[id]))
-                article = retrieve_article(retrieved_article_ids[id])
+                print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[idx]))
+                article = retrieve_article(retrieved_article_ids[idx])
                 article.abstract = get_abstract_text(article.abstract)
-                #dont insert same article details if it is already inserted into
-                if article.pm_id not in already_inserted_detailed_article_id_list:
+                # Ignore an article if it is already annotated.
+                if article.pm_id in already_inserted_detailed_article_id_list:
+                    print("Article ", article.pm_id, " is already annotated.")
+                    continue
+                else:
+                    new_article_counter += 1
                     article.get_top_keywords()
                     detailed_article_object = create_detailed_article_object(article)
                     already_inserted_detailed_article_id_list.append(article.pm_id)
@@ -304,22 +313,28 @@ def annotate(retrieved_article_ids):
                 # print(str(id)+"\n")
                 # print(article.abstract)
                 for c in concepts:
-                    positions = get_index_positions(article.abstract, c.pref_label)
+                    positions = get_index_positions(article.title, c.pref_label, offset=0)
+                    author_list_str = " ".join(article.author_list)
+                    positions.extend(get_index_positions(author_list_str, c.pref_label, offset=len(article.title)))
+                    positions.extend(get_index_positions(article.abstract, c.pref_label,
+                                                         offset=len(article.title + author_list_str)))
                     if positions:
                         for position in positions:
                             # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
                             # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
+                            article.uri = annotation_url + "/articles/" + article.pm_id
                             annotation_object = create_annotation_object(annotation_counter, article, c, position)
                             if article.pm_id not in annotated_article_ids:
                                 annotated_article_ids.append(article.pm_id)
                             # print(annotation_object)
                             annotation_counter = annotation_counter + 1
-                            annotation_list.append(annotation_object)
+                            annotation_list.append((annotation_object, article.pm_id))
                             if len(annotation_list) > 0:
                                 write_annotations_to_database(annotation_list)
                         print("\n--------------------------------------------")
 
                 article_json = {
+                    "id": article.pm_id,
                     "title": article.title,
                     "authors": article.author_list,
                     "keywords": article.top_three_keywords,
@@ -335,6 +350,8 @@ def annotate(retrieved_article_ids):
                 print("Oops!", sys.exc_info(), "occurred.")
             finally:
                 lock.release()
+    print("Number of new articles: ", new_article_counter)
+    print("Number of new annotations: ", annotation_counter - annotation_counter_start)
     return convert_to_json_abjects(annotated_article_ids)
 
 
@@ -345,19 +362,19 @@ def convert_to_json_abjects(annotated_article_ids):
     return annotated_article_ids_json
 
 
-def get_index_positions(abstract, element):
-    abstract = abstract.lower()
+def get_index_positions(text, element, offset=0):
+    text = text.lower()
     # print(abstract)
     element = element.lower()
     # print(element)
 
-    if element not in abstract:
+    if element not in text:
         return []
 
     index_pos_list = []
 
-    for match in re.finditer(element, abstract):
-        index_pos_list.append({'start': match.start(), 'end': match.end()})
+    for match in re.finditer(element, text):
+        index_pos_list.append({'start': match.start() + offset, 'end': match.end() + offset})
 
     return index_pos_list
 
@@ -378,7 +395,7 @@ def create_annotation_object(id, article, concept, position):
             }
         ],
         "target": {
-            "id": article.pm_id,
+            "id": article.uri,
             "selector": {
                 "type": "TextPositionSelector",
                 "start": position['start'],
@@ -387,19 +404,29 @@ def create_annotation_object(id, article, concept, position):
         }
     }
 
+
 def write_annotations_to_database(list, collection="annotation"):
     col = db[collection]
+    col2 = db["annotation_to_article"]
     while len(list) > 0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
-            future = executor.submit(col.insert_one, list.pop())
+            item = list.pop()
+
+            future = executor.submit(col.insert_one, item[0])
             result_ = future.result()
 
+            relationship = {"annotation_id": item[0]["id"], "pm_id": item[1]}
+            future = executor.submit(col2.insert_one, relationship)
+            result_ = future.result()
+
+
 def write_details_into_database():
-    col=db["annotated_article_ids"]
-    while len(detailed_article_list)>0:
+    col = db["annotated_article_ids"]
+    while len(detailed_article_list) > 0:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
             future = executor.submit(col.insert_one, detailed_article_list.pop())
             result_ = future.result()
+
 
 def create_detailed_article_object(article):
     return {
@@ -414,21 +441,25 @@ def create_detailed_article_object(article):
         "abstract": article.abstract
     }
 
+
+def get_annotation_counter_start():
+    lastEntryIndex = -1
+    query = {}
+    column = db["annotation"]
+    documents = column.find(query).sort("id", -1)
+    if documents.count() != 0:
+        lastEntryIndex = dict(documents[0])["id"]
+    return lastEntryIndex + 1
+
+
 def get_detailed_article_ids_from_db():
     query = {}
     column = db["annotated_article_ids"]
     document = column.find(query)
     for x in document:
         list_item = dict(x)
-        if list_item["id"] not in already_inserted_detailed_article_id_list :
+        if list_item["id"] not in already_inserted_detailed_article_id_list:
             already_inserted_detailed_article_id_list.append(list_item["id"])
-
-def write_abstracts_to_database(list, collection="abstracts"):
-    col = db[collection]
-    while len(list) > 0:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
-            future = executor.submit(col.insert_one, list.pop())
-            result_ = future.result()
 
 
 def bulk_json_data(json_list, _index, doc_type):
@@ -448,7 +479,7 @@ if __name__ == "__main__":
     print("Retrieving " + str(number_of_article) + " article pubmed ids from Pubmed related to: ", search_keywords)
     # already_inserted_detailed_article_id_list
     retrieved_article_ids = []
-    #get all detailed articles from db
+    # get all detailed articles from db
     get_detailed_article_ids_from_db()
     for search_keyword in search_keywords:
         ids = retrieve_article_ids(search_keyword, number_of_article)
@@ -463,13 +494,11 @@ if __name__ == "__main__":
 
     try:
         elastic = Elasticsearch(hosts=["es01"])
-        print(articles)
+        # print(articles)
         response = helpers.bulk(elastic, bulk_json_data(articles, "test5", "doc"))
-        print("\nRESPONSE:", response)
+        # print("\nRESPONSE:", response)
     except Exception as e:
         print("\nERROR:", e)
-
-    write_abstracts_to_database(articles)
 
     now = datetime.now()
     finish_time = now.strftime("%H:%M:%S")
