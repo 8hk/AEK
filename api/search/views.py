@@ -431,11 +431,18 @@ class Article(object):
         self.article_date = article_date
         self.top_three_keywords = top_three_keywords
         # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
-        # self.json_val=self.toJSON()
+        self.json_val=self.toJSON()
 
+    #todo article_type and annotation_id
+    #todo pm_id mi pm_link mi?
     def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__,
-                          sort_keys=True, indent=4)
+        return {
+            "pm_id":self.pm_id,
+            "title":self.title,
+            "authors":self.author_list,
+            "article_type":"",
+            "annotation_id":""
+        }
 
 
 class Author(object):
@@ -533,15 +540,15 @@ class SearchResult(object):
         dict = {}
         json_articles = []
         # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
-        # for article in self.articles:
-        #     json_articles.append(article.json_val)
+        for article in self.articles:
+            json_articles.append(article.json_val)
         dict["value"] = self.keyword.replace(")", " ")
         dict["papers_number"] = self.number_of_article
         dict["top_authors"] = self.top_authors
         dict["top_keywords"] = self.top_keywords
         dict["publication_year"] = self.result_change_time_years
         dict["publication_year_values"] = self.result_change_time_numbers
-        # dict["articles"] = json_articles
+        dict["articles"] = json_articles
         del json_articles
         response["keyword_pairs"].append(dict)
         del dict
