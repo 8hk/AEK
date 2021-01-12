@@ -338,7 +338,8 @@ class SearchHelper(object):
         for x in document:
             list_item = dict(x)
             if list_item["target"]["id"] not in article_id_list:
-                article_id_list.append(list_item["target"]["id"])
+                target_id_str=list_item["target"]["id"].split("/")
+                article_id_list.append(target_id_str[len(target_id_str)-1])
         return article_id_list
 
     # takes article details from mongodb with its keyword
@@ -353,7 +354,6 @@ class SearchHelper(object):
                               journal_issn="",
                               journal_name=list_item["journal_name"],
                               abstract="",
-                              # abstract=list_item["abstract"],
                               pubmed_link=list_item["pubmed_link"],
                               author_list=list_item["author_list"],
                               instutation_list=list_item["institution_list"],
@@ -373,6 +373,8 @@ class SearchHelper(object):
         for x in (futures):
             articles.append(x.result())
         return articles
+
+
 
     def get_article_ids_from_elastic(self, keyword):
         es = Elasticsearch(hosts=["es01"])
@@ -406,20 +408,9 @@ class SearchHelper(object):
 
 # it is similar class with annotate_abstract
 class Article(object):
-    pm_id = ""
-    title = ""
-    abstract = ""
-    journal_issn = ""
-    journal_name = ""
-    pubmed_link = ""
-    author_list = []
-    instutation_list = []
-    article_date = ""
-    top_three_keywords = []
-    json_val = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link, author_list, instutation_list,
-                 article_date, top_three_keywords):
+                 article_date, top_three_keywords,article_type):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
@@ -430,18 +421,17 @@ class Article(object):
         self.instutation_list = instutation_list
         self.article_date = article_date
         self.top_three_keywords = top_three_keywords
-        # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
+        self.article_type = article_type
         self.json_val=self.toJSON()
 
-    #todo article_type and annotation_id
     #todo pm_id mi pm_link mi?
+    #TODO annotation_id den articles/id değiştiği için article_id veya annotation_id sunma gereği kalmadı
     def toJSON(self):
         return {
             "pm_id":self.pm_id,
             "title":self.title,
             "authors":self.author_list,
-            "article_type":"",
-            "annotation_id":""
+            "article_type":self.article_type
         }
 
 
