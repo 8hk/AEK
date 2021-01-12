@@ -450,7 +450,8 @@ class Article(object):
             "pm_id":self.pm_id,
             "title":self.title,
             "authors":self.author_list,
-            "article_type":self.article_type
+            "article_type":self.article_type,
+            "article_date":self.article_date
         }
 
 
