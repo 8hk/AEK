@@ -75,7 +75,7 @@ class Article:
     uri = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract,
-                 pubmed_link, author_list, instutation_list, article_date):
+                 pubmed_link, author_list, instutation_list, article_date,article_type):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
@@ -86,6 +86,7 @@ class Article:
         self.instutation_list = instutation_list
         self.article_date = article_date
         self.top_three_keywords = []
+        self.article_type = article_type
 
     # finds top 3 keywords of an article's abstract
     def get_top_keywords(self):
@@ -183,6 +184,7 @@ def retrieve_article(article_id):
             instutation_list = []
             articledate = ""
             article_date = ""
+            article_type=""
             if xpars.get("PubmedArticleSet") is not None:
                 if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
                     if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
@@ -250,10 +252,13 @@ def retrieve_article(article_id):
                             else:
                                 article_date = ""
 
+                            if article.get("PublicationTypeList") is not None:
+                                if article.get("PublicationTypeList").get("PublicationType") is not None:
+                                    article_type=article["PublicationTypeList"]["PublicationType"]["#text"]
+
                             return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link,
                                            author_list,
-                                           instutation_list, article_date)
-                            # return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link)
+                                           instutation_list, article_date,article_type)
         except:
             print("Oops!", sys.exc_info(), "occurred for article id: ", article_id)
             print("Details about article:", article_title, " journal_issn:", journal_issn, " journal_name: ",
@@ -438,7 +443,8 @@ def create_detailed_article_object(article):
         "institution_list": article.instutation_list,
         "article_date": article.article_date,
         "top_three_keywords": article.top_three_keywords,
-        "abstract": article.abstract
+        "abstract": article.abstract,
+        "article_type": article.article_type
     }
 
 
