@@ -100,7 +100,8 @@ class Pair {
             $('#example').DataTable({
                 data: d,
                 searchPanes: {
-                    layout: 'columns-1'
+                    layout: 'columns-1',
+                    threshold: 1
                 },
                 responsive: true,
                 dom: '<"dtsp-verticalContainer"<"dtsp-verticalPanes"P>l<"dtsp-dataTable"frtip>>',
