@@ -16,17 +16,15 @@ html {
     border: 2px solid darkseagreen;
 }
 
-.container {
-  max-width: 860px;
-}
-
 .pricing-header {
   max-width: 700px;
 }
 
-.card-deck .card {
+.card {
   min-width: 220px;
+  max-width: 220px;
 }
+
 
 .border-top { border-top: 1px solid #e5e5e5; }
 .border-bottom { border-bottom: 1px solid #e5e5e5; }
