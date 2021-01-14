@@ -13,7 +13,24 @@
     <link href="{% static 'css/all.min.css' %}" rel="stylesheet">
     <link type="text/css">
     <link href="{% static 'css/custom/card.css' %}" rel="stylesheet">
+    <link type="text/css">
+    <link href="{% static 'css/custom/datatable.css' %}" rel="stylesheet">
+    <!-- Datatable -->
+    <script
+            src="https://code.jquery.com/jquery-3.5.1.js"
+            integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+            crossorigin="anonymous"></script>
 
+    <link href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css"/>
+    <link href="https://cdn.datatables.net/searchpanes/1.2.1/css/searchPanes.dataTables.min.css" rel="stylesheet"
+          type="text/css"/>
+    <link href="https://cdn.datatables.net/select/1.3.1/css/select.dataTables.min.css" rel="stylesheet"
+          type="text/css"/>
+
+    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/searchpanes/1.2.1/js/dataTables.searchPanes.min.js"></script>
+    <script src="https://cdn.datatables.net/select/1.3.1/js/dataTables.select.min.js"></script>
+    <script src=""></script>
 
 </head>
 <body>
@@ -25,10 +42,30 @@
     </nav>
 </div>
 
-<div class="container">
-    <div class="card-deck mb-3 text-center" id="keyword-pair-container"></div>
+<div class="jumbotron">
+    <div class="container">
+        <div class="card-deck mb-3 text-center" id="keyword-pair-container"></div>
 
 
+    </div>
+</div>
+<div class="jumbotron">
+    <div>
+        <h4 id="header"></h4>
+        <table id="example" class="display wrap" width="100%">
+            <thead>
+            <tr>
+                <th>Pubmed ID</th>
+                <th>Title</th>
+                <th>Authors</th>
+                <th>Publication Year</th>
+                <th>Article Type</th>
+                <th>Pubmed Link</th>
+                <th>Article Link</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
 </div>
 
 <footer class="pt-4 my-md-5 pt-md-5 border-top">
@@ -49,6 +86,8 @@
 <script src="{% static 'js/holder.min.js' %}"></script>
 <script src="{% static 'js/custom/keyword_pair.js' %}" type="module"></script>
 <script type="module">
+    document.getElementById("example").style.visibility = "hidden";
+    document.getElementById("header").style.visibility = "hidden";
     import {Pair} from "{% static 'js/custom/keyword_pair.js' %}";
 
     var data = '{{keyword_pairs|escapejs}}';
