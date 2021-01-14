@@ -42,7 +42,7 @@ class Pair {
 
         var h3 = document.createElement('h6');
         h3.className = "card-title pricing-card-title";
-        h3.innerText = "Top Keywords";
+        h3.innerText = "Top Authors";
         iDiv3.appendChild(h3);
         var list2 = document.createElement('ul');
         list2.className = "list-unstyled mt-3 mb-4";
@@ -59,7 +59,7 @@ class Pair {
 
         var h4 = document.createElement('h6');
         h4.className = "card-title pricing-card-title";
-        h4.innerText = "Top Authors";
+        h4.innerText = "Top Keywords";
         iDiv3.appendChild(h4);
         var list3 = document.createElement('ul');
         list3.className = "list-unstyled mt-3 mb-4";
