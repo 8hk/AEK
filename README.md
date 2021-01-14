@@ -10,3 +10,6 @@ This project uses the following open source libraries:
 - [jQuery 3.5.1](https://github.com/jquery/jquery/tree/3.5.1) with [MIT License](https://github.com/jquery/jquery/blob/3.5.1/LICENSE.txt)
 - [Bootstrap v3.4.1](https://github.com/twbs/bootstrap/tree/v3.4.1) with [MIT License](https://github.com/twbs/bootstrap/blob/v3.4.1/LICENSE)
 - [Bootstrap Tags Input](https://github.com/bootstrap-tagsinput/bootstrap-tagsinput/tree/0.8.0) with [MIT License](https://github.com/bootstrap-tagsinput/bootstrap-tagsinput/blob/0.8.0/LICENSE)
+- [Chart.js](https://github.com/chartjs/Chart.js/) with [MIT License](hhttps://github.com/chartjs/Chart.js/blob/master/LICENSE.md)
+- [Popper.js](https://github.com/popperjs/popper-core) with [MIT License](https://github.com/popperjs/popper-core/blob/master/LICENSE.md)
+- [Holderjs](https://github.com/imsky/holder) with [MIT License](https://github.com/imsky/holder/blob/master/LICENSE)

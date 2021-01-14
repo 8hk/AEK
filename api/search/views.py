@@ -193,10 +193,10 @@ class SearchHelper(object):
         if len(common_article_list) > 0:
             article_details_futures = []
             articles = []
-            with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                 article_details_futures.append(executor.submit(self.get_article_details, common_article_list))
-            for x in as_completed(article_details_futures):
-                articles = x.result()
+                for x in as_completed(article_details_futures):
+                    articles = x.result()
             print("articles created for ", combination)
             if len(articles) > 0:
                 search_result = SearchResult(combination)
@@ -338,8 +338,19 @@ class SearchHelper(object):
         for x in document:
             list_item = dict(x)
             if list_item["target"]["id"] not in article_id_list:
-                article_id_list.append(list_item["target"]["id"])
+                target_id_str=list_item["target"]["id"].split("/")
+                article_id_list.append(target_id_str[len(target_id_str)-1])
         return article_id_list
+
+    #returns a dict that consist all articles in the mongodb
+    def retrieve_all_articles(self):
+        mongo_query = {}
+        document = self.annotation_detail_column.find(mongo_query)
+        all_papers = {}
+        for x in document:
+            list_item = dict(x)
+            all_papers[list_item["id"]]=list_item
+        return all_papers
 
     # takes article details from mongodb with its keyword
     def article_details_query(self, article_id):
@@ -353,7 +364,6 @@ class SearchHelper(object):
                               journal_issn="",
                               journal_name=list_item["journal_name"],
                               abstract="",
-                              # abstract=list_item["abstract"],
                               pubmed_link=list_item["pubmed_link"],
                               author_list=list_item["author_list"],
                               instutation_list=list_item["institution_list"],
@@ -366,13 +376,26 @@ class SearchHelper(object):
     # create collection of details of articles
     def get_article_details(self, article_list):
         articles = []
-        futures = []
-        while article_list:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-                futures.append(executor.submit(self.article_details_query, article_list.pop()))
-        for x in (futures):
-            articles.append(x.result())
+        all_articles = self.retrieve_all_articles()
+        # create all articles from given list
+        for article_id in article_list:
+            list_item=all_articles[article_id]
+            if article_id == list_item["id"]:
+                article = Article(pm_id=list_item["id"],
+                                  title=list_item["id"],
+                                  journal_issn="",
+                                  journal_name=list_item["journal_name"],
+                                  abstract="",
+                                  pubmed_link=list_item["pubmed_link"],
+                                  author_list=list_item["author_list"],
+                                  instutation_list=list_item["institution_list"],
+                                  article_date=list_item["article_date"],
+                                  top_three_keywords=list_item["top_three_keywords"],
+                                  article_type=list_item["article_type"])
+                articles.append(article)
         return articles
+
+
 
     def get_article_ids_from_elastic(self, keyword):
         es = Elasticsearch(hosts=["es01"])
@@ -406,20 +429,9 @@ class SearchHelper(object):
 
 # it is similar class with annotate_abstract
 class Article(object):
-    pm_id = ""
-    title = ""
-    abstract = ""
-    journal_issn = ""
-    journal_name = ""
-    pubmed_link = ""
-    author_list = []
-    instutation_list = []
-    article_date = ""
-    top_three_keywords = []
-    json_val = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link, author_list, instutation_list,
-                 article_date, top_three_keywords):
+                 article_date, top_three_keywords,article_type):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
@@ -430,12 +442,17 @@ class Article(object):
         self.instutation_list = instutation_list
         self.article_date = article_date
         self.top_three_keywords = top_three_keywords
-        # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
-        # self.json_val=self.toJSON()
+        self.article_type = article_type
+        self.json_val=self.toJSON()
 
     def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__,
-                          sort_keys=True, indent=4)
+        return {
+            "pm_id":self.pm_id,
+            "title":self.title,
+            "authors":self.author_list,
+            "article_type":self.article_type,
+            "article_date":self.article_date
+        }
 
 
 class Author(object):
@@ -532,16 +549,15 @@ class SearchResult(object):
     def generate_dict_value(self, response):
         dict = {}
         json_articles = []
-        # todo Document size too large with BSONObj size is invalid hatası geliyor ondan kapalı
-        # for article in self.articles:
-        #     json_articles.append(article.json_val)
+        for article in self.articles:
+            json_articles.append(article.json_val)
         dict["value"] = self.keyword.replace(")", " ")
         dict["papers_number"] = self.number_of_article
         dict["top_authors"] = self.top_authors
         dict["top_keywords"] = self.top_keywords
         dict["publication_year"] = self.result_change_time_years
         dict["publication_year_values"] = self.result_change_time_numbers
-        # dict["articles"] = json_articles
+        dict["articles"] = json_articles
         del json_articles
         response["keyword_pairs"].append(dict)
         del dict
