@@ -382,7 +382,7 @@ class SearchHelper(object):
             list_item=all_articles[article_id]
             if article_id == list_item["id"]:
                 article = Article(pm_id=list_item["id"],
-                                  title=list_item["id"],
+                                  title=list_item["title"],
                                   journal_issn="",
                                   journal_name=list_item["journal_name"],
                                   abstract="",
