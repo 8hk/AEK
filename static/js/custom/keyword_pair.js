@@ -103,7 +103,7 @@ class Pair {
                     layout: 'columns-1'
                 },
                 responsive: true,
-                dom: '<"dtsp-verticalContainer"<"dtsp-verticalPanes"P><"dtsp-dataTable"frtip>>',
+                dom: '<"dtsp-verticalContainer"<"dtsp-verticalPanes"P>l<"dtsp-dataTable"frtip>>',
                 pageLength: 20,
                 columns: [
                     {data: 'pm_id'},

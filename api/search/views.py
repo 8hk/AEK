@@ -27,6 +27,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from pymongo import MongoClient
 from elasticsearch import Elasticsearch
 from api.mainquery.views import Dimension
+import os
 from api.search.models import AnnotatedArticle
 from django.template.response import TemplateResponse
 import pymongo
@@ -338,18 +339,18 @@ class SearchHelper(object):
         for x in document:
             list_item = dict(x)
             if list_item["target"]["id"] not in article_id_list:
-                target_id_str=list_item["target"]["id"].split("/")
-                article_id_list.append(target_id_str[len(target_id_str)-1])
+                target_id_str = list_item["target"]["id"].split("/")
+                article_id_list.append(target_id_str[len(target_id_str) - 1])
         return article_id_list
 
-    #returns a dict that consist all articles in the mongodb
+    # returns a dict that consist all articles in the mongodb
     def retrieve_all_articles(self):
         mongo_query = {}
         document = self.annotation_detail_column.find(mongo_query)
         all_papers = {}
         for x in document:
             list_item = dict(x)
-            all_papers[list_item["id"]]=list_item
+            all_papers[list_item["id"]] = list_item
         return all_papers
 
     # takes article details from mongodb with its keyword
@@ -379,7 +380,7 @@ class SearchHelper(object):
         all_articles = self.retrieve_all_articles()
         # create all articles from given list
         for article_id in article_list:
-            list_item=all_articles[article_id]
+            list_item = all_articles[article_id]
             if article_id == list_item["id"]:
                 article = Article(pm_id=list_item["id"],
                                   title=list_item["title"],
@@ -387,6 +388,7 @@ class SearchHelper(object):
                                   journal_name=list_item["journal_name"],
                                   abstract="",
                                   pubmed_link=list_item["pubmed_link"],
+                                  article_link=os.environ.get("ARTICLE_URL", " ") + "/articles/" + list_item["id"],
                                   author_list=list_item["author_list"],
                                   instutation_list=list_item["institution_list"],
                                   article_date=list_item["article_date"],
@@ -394,8 +396,6 @@ class SearchHelper(object):
                                   article_type=list_item["article_type"])
                 articles.append(article)
         return articles
-
-
 
     def get_article_ids_from_elastic(self, keyword):
         es = Elasticsearch(hosts=["es01"])
@@ -430,29 +430,31 @@ class SearchHelper(object):
 # it is similar class with annotate_abstract
 class Article(object):
 
-    def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link, author_list, instutation_list,
-                 article_date, top_three_keywords,article_type):
+    def __init__(self, pm_id, title, journal_issn, journal_name, abstract, pubmed_link, article_link, author_list,
+                 instutation_list, article_date, top_three_keywords, article_type):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
         self.journal_name = journal_name
         self.abstract = abstract
         self.pubmed_link = pubmed_link
+        self.article_link=article_link
         self.author_list = author_list
         self.instutation_list = instutation_list
         self.article_date = article_date
         self.top_three_keywords = top_three_keywords
         self.article_type = article_type
-        self.json_val=self.toJSON()
+        self.json_val = self.toJSON()
 
     def toJSON(self):
         return {
-            "pm_id":self.pm_id,
-            "title":self.title,
-            "authors":self.author_list,
-            "pubmed_link":self.pubmed_link,
-            "article_type":self.article_type,
-            "article_date":self.article_date
+            "pm_id": self.pm_id,
+            "title": self.title,
+            "authors": self.author_list,
+            "pubmed_link": self.pubmed_link,
+            "article_link":self.article_link,
+            "article_type": self.article_type,
+            "article_date": self.article_date
         }
 
 
