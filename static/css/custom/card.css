@@ -3,12 +3,21 @@ html {
 }
 @media (min-width: 768px) {
   html {
-    font-size: 16px;
+    font-size: 12px;
   }
 }
 
+.flex-container {
+    display: flex;
+}
+
+.flex-child {
+    flex: 1;
+    border: 2px solid darkseagreen;
+}
+
 .container {
-  max-width: 160px;
+  max-width: 860px;
 }
 
 .pricing-header {

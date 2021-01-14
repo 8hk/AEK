@@ -17,7 +17,7 @@ class Pair {
         //region div elements
         var iDiv = document.createElement('div');
         iDiv.id = 'block' + index;
-        iDiv.className = 'card box-shadow';
+        iDiv.className = 'card box-shadow flex-child';
 
         var iDiv2 = document.createElement('div');
         iDiv2.className = 'card-header';
