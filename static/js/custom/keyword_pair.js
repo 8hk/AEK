@@ -1,91 +1,12 @@
 import * as c from "./../chart.js-2.9.4/package/dist/Chart.min.js"
 
 var keywords;
-/*region remove articles are available
-var article = {}
-article["id"] = "31488767"
-article["title"] = "Bipolar disorders and bipolarity: the notion of the mixing"
-article["authors"] = "Giuseppe Tavormina, Aitana García-Estela, Ludovic Samalin, Anabel Martínez-Arán"
-article["publication_year"] = "2017"
-article["article_types"] = "journal"
-article["pubmed_link"] = "https://pubmed.ncbi.nlm.nih.gov/31488767/"
-article["article_link"] = "https://pubmed.ncbi.nlm.nih.gov/31488767/"
 
-var article2 = {}
-article2["id"] = "33422826"
-article2["title"] = "Does cognitive impairment in bipolar disorder impact on a SIMPLe app use?"
-article2["authors"] = "Caterina Del Mar Bonnín, Brisa Solé, María Reinares"
-article2["publication_year"] = "2020"
-article2["article_types"] = "Journal of affective disorders"
-article2["pubmed_link"] = "https://pubmed.ncbi.nlm.nih.gov/33422826/"
-article2["article_link"] = "https://pubmed.ncbi.nlm.nih.gov/33422826/"
-
-var article3 = {}
-article3["id"] = "33422825"
-article3["title"] = "The risk of anxiety disorders in children of parents with severe psychiatric disorders: a systematic review and meta-analysis."
-article3["authors"] = "Getinet Ayano, Kim Betts, Joemer Calderon Maravilla"
-article3["publication_year"] = "2017"
-article3["article_types"] = "journal"
-article3["pubmed_link"] = "https://pubmed.ncbi.nlm.nih.gov/33422825/"
-article3["article_link"] = "https://pubmed.ncbi.nlm.nih.gov/33422825/"
-
-var article4 = {}
-article4["id"] = "316546567"
-article4["title"] = "Bipolar disorders and bipolarity: the notion of the mixing"
-article4["authors"] = "James A Karantonis, Susan L Rossell, Michael Berk"
-article4["publication_year"] = "2002"
-article4["article_types"] = "journal"
-article4["pubmed_link"] = "https://pubmed.ncbi.nlm.nih.gov/316546567/"
-article4["article_link"] = "https://pubmed.ncbi.nlm.nih.gov/316546567/"
-
-var article5 = {}
-article5["id"] = "31488767"
-article5["title"] = "The mental health and lifestyle impacts of COVID-19 on bipolar disorder"
-article5["authors"] = "Clara S Humpston, Paul Bebbington, Steven Marwaha"
-article5["publication_year"] = "2013"
-article5["article_types"] = "journal"
-article5["pubmed_link"] = "https://pubmed.ncbi.nlm.nih.gov/31488767/"
-article5["article_link"] = "https://pubmed.ncbi.nlm.nih.gov/31488767/"
-
-var article6 = {}
-article6["id"] = "31488767"
-article6["title"] = "Bipolar disorder: Prevalence, help-seeking and use of mental health care in England. Findings from the 2014 Adult Psychiatric Morbidity Survey"
-article6["authors"] = "Yagmur Kir, Adnan Kusman, Busra Yalcinkaya"
-article6["publication_year"] = "2015"
-article6["article_types"] = "journal"
-article6["pubmed_link"] = "https://pubmed.ncbi.nlm.nih.gov/31488767/"
-article6["article_link"] = "https://pubmed.ncbi.nlm.nih.gov/31488767/"
-var articles = []
-articles = articles.concat(article)
-articles = articles.concat(article2)
-articles = articles.concat(article3)
-articles = articles.concat(article4)
-articles = articles.concat(article5)
-articles = articles.concat(article6)
-articles = articles.concat(article)
-articles = articles.concat(article2)
-articles = articles.concat(article3)
-articles = articles.concat(article4)
-articles = articles.concat(article5)
-articles = articles.concat(article6)
-
-//endregion*/
 class Pair {
 
     constructor(data) {
         console.log("data: " + data)
         keywords = JSON.parse(data);
-        //region remove when articles are available
-        /*for (let k in keywords.keyword_pairs) {
-            keywords.keyword_pairs[k]["articles"] = []
-            for (let i = 0; i < keywords.keyword_pairs[k].papers_number; i++) {
-                if (i < articles.length)
-                    keywords.keyword_pairs[k]["articles"] = keywords.keyword_pairs[k]["articles"].concat(articles[i])
-                else
-                    keywords.keyword_pairs[k]["articles"] = keywords.keyword_pairs[k]["articles"].concat(articles[0])
-            }
-        }*/
-        //endregion
         var cards = ""
         for (let key in keywords.keyword_pairs) {
             this.create_card(keywords.keyword_pairs[key], key);
