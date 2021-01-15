@@ -112,8 +112,22 @@ class Pair {
                     {data: 'authors'},
                     {data: 'article_date'},
                     {data: 'article_type'},
-                    {data: 'pubmed_link'},
-                    {data: 'article_link'}
+                    {
+                        data: 'pubmed_link',
+                        fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                            if (oData.pubmed_link) {
+                                $(nTd).html("<a href='" + oData.pubmed_link + "'>" + oData.pubmed_link + "</a>");
+                            }
+                        }
+                    },
+                    {
+                        data: 'article_link',
+                        fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                            if (oData.article_link) {
+                                $(nTd).html("<a href='" + oData.article_link + "'>" + oData.article_link + "</a>");
+                            }
+                        }
+                    }
                 ]
             });
             document.getElementById("example").style.visibility = "visible"
@@ -121,7 +135,7 @@ class Pair {
             document.getElementById("header").innerText = "Articles for query: " + pair.value;
 
             //scroll to specific div when go to button is clicked
-            let target=document.getElementById("example")
+            let target = document.getElementById("example")
             var scrollContainer = target;
             do { //find scroll container
                 scrollContainer = scrollContainer.parentNode;
