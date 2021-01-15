@@ -43,6 +43,11 @@ db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
 
 article_url = os.environ.get("SERVER_URL", " ")
 
+es_url = os.environ.get("ELASTIC_SEARCH_SERVICE_URL", " ")
+es_port = os.environ.get("ELASTIC_SEARCH_SERVICE_PORT", 443)
+es_username = os.environ.get("ELASTIC_SEARCH_SERVICE_USERNAME", " ")
+es_password = os.environ.get("ELASTIC_SEARCH_SERVICE_PASSWORD", " ")
+
 detailed_article_list = []
 already_inserted_detailed_article_id_list = []
 
@@ -502,7 +507,8 @@ if __name__ == "__main__":
         annotated_article_ids = future.result()
 
     try:
-        elastic = Elasticsearch(hosts=["es01"])
+        #elastic = Elasticsearch(hosts=["es01"])
+        elastic = Elasticsearch(hosts=[es_url], http_auth=(es_username, es_password), port=es_port, use_ssl=True)
         # print(articles)
         response = helpers.bulk(elastic, bulk_json_data(articles, "test5", "doc"))
         # print("\nRESPONSE:", response)

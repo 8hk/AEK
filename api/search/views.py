@@ -39,6 +39,7 @@ import requests
 import xmltodict
 from collections import Counter
 import sys
+import os
 
 
 @csrf_exempt
@@ -158,6 +159,10 @@ class SearchHelper(object):
     articles_by_term = {}
 
     def __init__(self, main_query):
+        self.es_url = os.environ.get("ELASTIC_SEARCH_SERVICE_URL", " ")
+        self.es_port = os.environ.get("ELASTIC_SEARCH_SERVICE_PORT", 443)
+        self.es_username = os.environ.get("ELASTIC_SEARCH_SERVICE_USERNAME", " ")
+        self.es_password = os.environ.get("ELASTIC_SEARCH_SERVICE_PASSWORD", " ")
         self.main_query = main_query
         self.dimensions = []
         self.combinations = []
@@ -304,7 +309,8 @@ class SearchHelper(object):
                                              other_dimension_index, index + 1)
 
     def elastic_search(self, main_query):
-        es = Elasticsearch(hosts=["es01"])
+        #es = Elasticsearch(hosts=["es01"])
+        es = Elasticsearch(hosts=[self.es_url], http_auth=(self.es_username, self.es_password), port=self.es_port, use_ssl=True)
 
         res = es.search(
             index="test5",
@@ -398,7 +404,8 @@ class SearchHelper(object):
 
 
     def get_article_ids_from_elastic(self, keyword):
-        es = Elasticsearch(hosts=["es01"])
+        #es = Elasticsearch(hosts=["es01"])
+        es = Elasticsearch(hosts=[self.es_url], http_auth=(self.es_username, self.es_password), port=self.es_port, use_ssl=True)
         res = es.search(
             index="test5",
             body={
