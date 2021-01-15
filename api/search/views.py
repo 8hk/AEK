@@ -338,8 +338,8 @@ class SearchHelper(object):
         article_id_list = []
         for x in document:
             list_item = dict(x)
-            if list_item["target"]["id"] not in article_id_list:
-                target_id_str = list_item["target"]["id"].split("/")
+            target_id_str = list_item["target"]["id"].split("/")
+            if target_id_str[len(target_id_str) - 1] not in article_id_list:
                 article_id_list.append(target_id_str[len(target_id_str) - 1])
         return article_id_list
 
