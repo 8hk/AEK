@@ -41,7 +41,7 @@ client = MongoClient(
 
 db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
 
-annotation_url = os.environ.get("ANNOTATION_URL", " ")
+annotation_url = os.environ.get("ARTICLE_URL", " ")
 
 detailed_article_list = []
 already_inserted_detailed_article_id_list = []
