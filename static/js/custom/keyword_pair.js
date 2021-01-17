@@ -9,7 +9,18 @@ class Pair {
         keywords = JSON.parse(data);
         var cards = ""
         for (let key in keywords.keyword_pairs) {
-            this.create_card(keywords.keyword_pairs[key], key);
+            //check each keyword empty or not
+            if(!keywords.keyword_pairs[key].empty_result){
+                //if keyword is not empty list
+                 this.create_card(keywords.keyword_pairs[key], key);
+            }
+            else{
+                var empty_list = document.createElement('li');
+                empty_list.innerText = keywords.keyword_pairs[key].value;
+                document.getElementById("empty-result-list").style.visibility = "visible"
+                document.getElementById("empty-result-list").appendChild(empty_list);
+            }
+
         }
     }
 
