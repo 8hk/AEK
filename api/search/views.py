@@ -207,6 +207,10 @@ class SearchHelper(object):
                 self.search_result_list.append(search_result)
                 del search_result
                 del articles
+        else:
+            search_result = SearchResult(combination)
+            search_result.empty_result=True
+            self.search_result_list.append(search_result)
         common_article_list.clear()
 
     def start_query(self):
@@ -504,6 +508,7 @@ class SearchResult(object):
         self.result_change_time_numbers = []
         self.pm_ids = []
         self.authors = []
+        self.empty_result=False
 
     def change_article_number(self, article_number):
         self.number_of_article = article_number
@@ -561,6 +566,7 @@ class SearchResult(object):
         dict["publication_year"] = self.result_change_time_years
         dict["publication_year_values"] = self.result_change_time_numbers
         dict["articles"] = json_articles
+        dict["empty_result"] = self.empty_result
         del json_articles
         response["keyword_pairs"].append(dict)
         del dict
