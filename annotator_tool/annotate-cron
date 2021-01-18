@@ -1,5 +1,5 @@
 SHELL=/bin/bash
 BASH_ENV=/mentisparchment_docker/container.env
 
-0 0 */1 * * cd /mentisparchment_docker/annotator_tool; /usr/local/bin/python annotate_abstract.py >> /var/log/cron.log 2>&1
+0 0 */1 * * cd /mentisparchment_docker/annotator_tool; /usr/local/bin/python annotate_abstract.py >> /mentisparchment_docker/annotator-cron.log 2>&1
 
