@@ -222,7 +222,7 @@ class SearchHelper(object):
             # query elastic by keyword retrieve article id
             # combine them together without duplicate
             # append combined list into articles_by_term
-            article_list_from_annoation = self.get_article_ids(keyword)
+            article_list_from_annoation = self.get_article_ids_from_annotations(keyword)
             article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
             article_list_from_annoation_as_set = set(article_list_from_annoation)
             article_list_from_elastic_as_set = set(article_list_from_elastic)
@@ -245,6 +245,8 @@ class SearchHelper(object):
             work_num = len(self.search_result_list)
         else:
             work_num = 1
+        #sort search result list
+        self.search_result_list.sort(key=lambda x: x.number_of_article, reverse=False)
         with concurrent.futures.ThreadPoolExecutor(max_workers=work_num) as executor:
             while self.search_result_list:
                 dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value, response))
@@ -335,16 +337,21 @@ class SearchHelper(object):
                 self.all_terms.append(keyword)
 
     # takes article ids from mongodb with its keyword
-    def get_article_ids(self, combination):
+    def get_article_ids_from_annotations(self, keyword):
         query = {}
-        query["body.value.id"] = combination
-        document = self.annotation_column.find(query)
+        #query over all keywords into search term
+        sub_keyword_strings=keyword.split(" ")
+        #dont forget to search the keyword itself
+        sub_keyword_strings.append(keyword)
         article_id_list = []
-        for x in document:
-            list_item = dict(x)
-            target_id_str = list_item["target"]["id"].split("/")
-            if target_id_str[len(target_id_str) - 1] not in article_id_list:
-                article_id_list.append(target_id_str[len(target_id_str) - 1])
+        for sub_keyword in sub_keyword_strings:
+            query["body.value.id"] = sub_keyword
+            document = self.annotation_column.find(query)
+            for x in document:
+                list_item = dict(x)
+                target_id_str = list_item["target"]["id"].split("/")
+                if target_id_str[len(target_id_str) - 1] not in article_id_list:
+                    article_id_list.append(target_id_str[len(target_id_str) - 1])
         return article_id_list
 
     # returns a dict that consist all articles in the mongodb
