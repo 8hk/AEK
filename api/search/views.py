@@ -430,6 +430,11 @@ class SearchHelper(object):
                 unique_papers.append(list_item["id"])
         return len(unique_papers)
 
+    def find_annotation_size(self):
+        mongo_query = {}
+        document = self.annotation_column.find(mongo_query)
+        return document.count()
+
 
 # it is similar class with annotate_abstract
 class Article(object):
@@ -638,11 +643,17 @@ def summaryPage(request):
     return render(request, 'html/summary-page.html', args)
 
 
+def findArticleNumber():
+    helper = SearchHelper("")
+    return helper.find_stored_article_number()
+
 # how many article stored into mongodb
 def findStoredArticleNumber(request):
-    helper = SearchHelper("")
-    number_of_paper = helper.find_stored_article_number()
-    dict = {}
-    dict["value"] = number_of_paper
+    dict= findArticleNumber()
     # return render(request,json.dumps(dict))
     return HttpResponse(json.dumps(dict), content_type="application/json")
+
+
+def findAnnotationNumber():
+    helper = SearchHelper("")
+    return helper.find_annotation_size()

@@ -1,0 +1,110 @@
+{% load static %}
+{% block content %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Search</title>
+
+        <!-- JQuery 3.5.1 -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+        <!-- Bootstrap 3.4.1 -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+        <!-- Bootstrap Tags Input Plugin -->
+        <link rel="stylesheet" href="{% static 'css/bootstrap-tagsinput.css' %}">
+        <script src="{% static 'js/bootstrap-tagsinput.js' %}"></script>
+
+        <!-- Custom scripts -->
+        <script src="{% static 'js/custom/search.js' %}"></script>
+
+        <!-- Custom stylesheets -->
+        <link rel="stylesheet" href="{% static 'css/custom/search.css' %}">
+        <link rel="stylesheet" href="{% static 'css/custom/counter.css' %}">
+        <link rel="stylesheet" href="{% static 'css/custom/about.css' %}">
+        <script>
+
+            $(window).on("load", function () {
+                const metrics = {{ metrics_data | safe }};
+                document.getElementById("article_number").innerText = metrics["article_number"];
+                document.getElementById("annotation_number").innerText = metrics["annotation_number"];
+            });
+        </script>
+
+    </head>
+    <body>
+
+    <div id="main-body">
+        <p id="message"></p>
+
+
+        <!-- About Section -->
+        <div class="about-section">
+            <h1>About Us</h1>
+            <h3>This project created for BOUN SWE 574 Course at Fall 2020.
+                Our <a href="https://github.com/8hk/AEK/wiki/Crew">team members</a> are currently working as software
+                engineers
+                from different companies at Istanbul/Turkey. </h3>
+            <h3>Project aims to search keywords provided by user at <a href="https://pubmed.ncbi.nlm.nih.gov">PubMed</a>
+                with using <a href="https://www.ncbi.nlm.nih.gov/books/NBK25497/">Entrez API</a>
+                and harvest the Entrez API result with using <a href="https://www.w3.org/TR/annotation-model/">Web
+                    Annotation Model</a>
+                and <a href="https://documentation.uts.nlm.nih.gov/rest/search/index.html">UMLS
+                    API</a> to provide more reliable and
+                intelligent search experience.
+            </h3>
+
+        </div>
+
+
+        <div class="about-section">
+            <h1>Some Metrics</h1>
+        </div>
+
+
+        <!-- Counter -->
+        <div class="container">
+            <h1></h1>
+            <h1></h1>
+            <h1></h1>
+            <div class="row">
+                <!-- Annotated Articles -->
+                <div class="col-sm-4">
+                    <div class="counter blue">
+                        <div class="counter-content">
+                            <div class="counter-icon">
+                                <i class="fa fa-rocket"></i>
+                            </div>
+                            <h3>Annotated Articles</h3>
+                            <span class="counter-value" id="article_number">
+                       </span>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Annotatations -->
+                <div class="col-sm-4">
+                    <div class="counter blue">
+                        <div class="counter-content">
+                            <div class="counter-icon">
+                                <i class="fa fa-rocket"></i>
+                            </div>
+                            <h3>Annatations</h3>
+                            <span class="counter-value" id="annotation_number">
+                       </span>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+
+    </div>
+
+    </body>
+    </html>
+{% endblock %}
