@@ -7,24 +7,62 @@ class Pair {
     constructor(data) {
         console.log("data: " + data)
         keywords = JSON.parse(data);
+        let keyword_dim_dict = this.get_keyword_dimension_dict(keywords.dimensions)
         var cards = ""
+
+        this.add_to_dimension_list("main query: \"" + keywords.mainquery + "\"");
+
+        for (let b = 0; b < keywords.dimensions.length; b++) {
+            let text = "dimension" + b.toString() + " : ";
+            for (let c = 0; c < keywords.dimensions[b].keywords.length; c++) {
+                text = text + "\"" + keywords.dimensions[b].keywords[c] + "\" ";
+            }
+            this.add_to_dimension_list(text);
+        }
+
         for (let key in keywords.keyword_pairs) {
             //check each keyword empty or not
-            if(!keywords.keyword_pairs[key].empty_result){
+            if (!keywords.keyword_pairs[key].empty_result) {
                 //if keyword is not empty list
-                 this.create_card(keywords.keyword_pairs[key], key);
+                this.create_card(keywords.keyword_pairs[key], key, keyword_dim_dict, keywords.mainquery);
+            } else {
+                var combination = ''
+                var title = this.get_title(keywords.keyword_pairs[key].value, keyword_dim_dict, keywords.mainquery);
+                for (let t = 0; t < title.length; t++) {
+                    combination = combination + title[t] + " "
+                }
+                this.add_to_empty_list(combination)
             }
-            else{
-                var empty_list = document.createElement('li');
-                empty_list.innerText = keywords.keyword_pairs[key].value;
-                document.getElementById("empty-result-list").style.visibility = "visible"
-                document.getElementById("empty-result-list").appendChild(empty_list);
-            }
-
         }
     }
 
-    create_card(pair, index) {
+    add_to_empty_list(text) {
+        var empty_list = document.createElement('li');
+        empty_list.innerText = text;
+        document.getElementById("empty-result-list").style.visibility = "visible"
+        document.getElementById("empty-result-list").appendChild(empty_list);
+    }
+
+    add_to_dimension_list(text) {
+        var dimention_list = document.createElement('li');
+        dimention_list.innerText = text;
+        document.getElementById("dimension-list").style.visibility = "visible"
+        document.getElementById("dimension-list").appendChild(dimention_list);
+    }
+
+    get_keyword_dimension_dict(dimensions_list) {
+        let keyword_dim_dict = {}
+        for (let dim = 0; dim < dimensions_list.length; dim++) {
+            let dimension_object = dimensions_list[dim];
+            for (let key = 0; key < dimension_object["keywords"].length; key++) {
+                if (!keyword_dim_dict.hasOwnProperty(dimension_object["keywords"][key]))
+                    keyword_dim_dict[dimension_object["keywords"][key]] = "dimension " + dim.toString();
+            }
+        }
+        return keyword_dim_dict;
+    }
+
+    create_card(pair, index, keyword_dim_dict, main_query) {
         //region div elements
         var iDiv = document.createElement('div');
         iDiv.id = 'block' + index;
@@ -32,10 +70,15 @@ class Pair {
 
         var iDiv2 = document.createElement('div');
         iDiv2.className = 'card-header';
-        var h1 = document.createElement('h6');
-        h1.className = "my-0 font-weight-normal";
-        h1.innerText = pair.value;
-        iDiv2.appendChild(h1);
+
+        var title = this.get_title(pair.value, keyword_dim_dict, main_query)
+        for (let t = 0; t < title.length; t++) {
+            var h1 = document.createElement('h6');
+            h1.className = "my-0 font-weight-normal";
+            h1.innerText = title[t];
+            iDiv2.appendChild(h1);
+        }
+
         iDiv.appendChild(iDiv2);
 
         var iDiv3 = document.createElement('div');
@@ -180,6 +223,19 @@ class Pair {
         document.getElementById("keyword-pair-container").appendChild(iDiv);
         this.create_chart(pair.publication_year, pair.publication_year_values, index);
     }
+
+    get_title(value, keyword_dim_dict, main_query) {
+        var res = value.split(",");
+        var title = []
+        title.push("main query : \"" + main_query + "\"")
+        for (let r = 1; r < res.length; r++) {
+            let dim_info = keyword_dim_dict[res[r]]
+            let keyword = res[r]
+            title.push(dim_info + " : \"" + keyword + "\"")
+        }
+        return title
+    }
+
 
     create_chart(publication_year, year_values, index) {
         var ctx = document.getElementById('myChart' + index);

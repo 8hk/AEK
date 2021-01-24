@@ -52,6 +52,9 @@ def startSearch(request):
         print("dimensions: ", dimensions)
         dimensions_json = json.loads(dimensions)["dimensions"]
         resp = Search.search_annotated_articles(main_query, dimensions_json)
+        resp["dimensions"]=dimensions_json
+        resp["mainquery"]=main_query
+
         data = {}
         data["keyword_pairs"] = json.dumps(resp)
         request.session['keyword_pairs'] = data
@@ -559,7 +562,7 @@ class SearchResult(object):
         json_articles = []
         for article in self.articles:
             json_articles.append(article.json_val)
-        dict["value"] = self.keyword.replace(")", " ")
+        dict["value"] = self.keyword.replace(")", ",")
         dict["papers_number"] = self.number_of_article
         dict["top_authors"] = self.top_authors
         dict["top_keywords"] = self.top_keywords
