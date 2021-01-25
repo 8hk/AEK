@@ -14,32 +14,49 @@ class AnnotatedArticle(models.Model):
         return{
             "@type": 'Annotation',
             "body": {
-            "type": "TextualBody",
-            "value": self.body_value
+            "type": "Choice",
+            "items": self.body_value
             }
         }
 
 #
-#     """
-#     {
+#  """
+# {
 #     "@context": "http://www.w3.org/ns/anno.jsonld",
-#       "id": "<annotation id (incremental)>",
-#       "type": "Annotation",
-#       "body":
-#         {
-#           "type": "TextualBody",
-#           "source": "<ontology + concept id>" // ontology 1
-#           "value": <synonym>
+#     "id": <annotation id (incremental)>,
+#     "type": "Annotation",
+#     "body": [
+#            {
+#             "type": "Choice",
+#             "source": "<ontology + concept id>" ,
+#             "items": [
+#                     {
+#                             "type": "TextualBody",
+#                             "value": "<synonym>"  # ontology concept label
+#                     },
+#                     {
+#                             "type": "TextualBody",
+#                             "value": "<synonym>"  # synonym 1
+#                     },
+#                     {
+#                             "type": "TextualBody",
+#                             "value": "<synonym>"  # synonym 2
+#                     },
+#                     {
+#                             "type": "TextualBody",
+#                             "value": "<synonym>"  # synonym n
+#                     }
+#                 ]
+#             }
 #         }
-#
-#       "target": {
-#         "id": "<article id>",
-#         "selector": {
-#           "type": "TextPositionSelector",
-#           "start": <start position in article>,
-#           "end": <end position in article>
+#     ],
+#     "target": {
+#         "id": "<internal article id>",
+#         "selector: {
+#             "type:": "TextPositionSelector",
+#             "start": <start position in article>,
+#             "end": <end position in article>
 #         }
-#
-#       }
 #     }
-#     """
+# }
+# """

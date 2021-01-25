@@ -337,7 +337,7 @@ class SearchHelper(object):
     # takes article ids from mongodb with its keyword
     def get_article_ids(self, combination):
         query = {}
-        query["body.value.id"] = combination
+        query["body.items.value"] = combination
         document = self.annotation_column.find(query)
         article_id_list = []
         for x in document:
