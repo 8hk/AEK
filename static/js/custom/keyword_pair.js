@@ -148,26 +148,6 @@ class Pair {
             document.getElementById("example").style.visibility = "visible"
             document.getElementById("header").style.visibility = "visible"
             document.getElementById("header").innerText = "Articles for query: " + pair.value;
-            /**
-             * ,
-                        fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
-                            if (oData.authors) {
-                                let authors_html = "";
-                                for(let idx = 0; idx < oData.authors.length; idx ++) {
-                                    authors_html +=  "<span>" + oData.authors[idx] + "</span>";
-                                    let list_of_authors_in_wiki = search_author_in_wikidata(oData.authors[idx]);
-                                    console.log("authors: ", list_of_authors_in_wiki.length);
-                                    for(let author_idx = 0; author_idx < list_of_authors_in_wiki.length; author_idx ++) {
-                                        authors_html += "<a href='" + list_of_authors_in_wiki[author_idx] + "'>[" + author_idx + "]</a>";
-                                    }
-                                    if(idx < oData.authors.length) {
-                                        authors_html += "; ";
-                                    }
-                                }
-                                $(nTd).html(authors_html);
-                            }
-
-             */
 
             //scroll to specific div when go to button is clicked
             let target = document.getElementById("example")
