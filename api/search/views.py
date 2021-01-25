@@ -222,14 +222,14 @@ class SearchHelper(object):
             # query elastic by keyword retrieve article id
             # combine them together without duplicate
             # append combined list into articles_by_term
-            article_list_from_annoation = self.get_article_ids_from_annotations(keyword)
+            article_list_from_annotation = self.get_article_ids_from_annotations(keyword)
             article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
-            article_list_from_annoation_as_set = set(article_list_from_annoation)
+            article_list_from_annotation_as_set = set(article_list_from_annotation)
             article_list_from_elastic_as_set = set(article_list_from_elastic)
             list_elastic_items_not_in_list_annotation = list(
-                article_list_from_elastic_as_set - article_list_from_annoation_as_set)
-            combined = article_list_from_annoation + list_elastic_items_not_in_list_annotation
-            del article_list_from_annoation
+                article_list_from_elastic_as_set - article_list_from_annotation_as_set)
+            combined = article_list_from_annotation + list_elastic_items_not_in_list_annotation
+            del article_list_from_annotation
             del article_list_from_elastic
             del article_list_from_elastic_as_set
             self.articles_by_term[keyword] = combined
@@ -340,7 +340,7 @@ class SearchHelper(object):
     def get_article_ids_from_annotations(self, keyword):
         query = {}
         article_id_list = []
-        query["body.value.id"] = keyword
+        query["body.items.value"] = keyword
         document = self.annotation_column.find(query)
         for x in document:
             list_item = dict(x)
