@@ -223,7 +223,7 @@ class SearchHelper(object):
             # combine them together without duplicate
             # append combined list into articles_by_term
             article_list_from_annoation = self.get_article_ids(keyword)
-            article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
+            article_list_from_elastic = []#self.get_article_ids_from_elastic(keyword)
             article_list_from_annoation_as_set = set(article_list_from_annoation)
             article_list_from_elastic_as_set = set(article_list_from_elastic)
             list_elastic_items_not_in_list_annotation = list(

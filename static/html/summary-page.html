@@ -27,17 +27,23 @@
     <link href="https://cdn.datatables.net/select/1.3.1/css/select.dataTables.min.css" rel="stylesheet"
           type="text/css"/>
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
     <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/searchpanes/1.2.1/js/dataTables.searchPanes.min.js"></script>
     <script src="https://cdn.datatables.net/select/1.3.1/js/dataTables.select.min.js"></script>
     <link href="{% static 'css/custom/empty-list.css' %}" rel="stylesheet">
-    <script src=""></script>
+    <script src="{% static 'js/custom/search_wikidata.js' %}"></script>
 
 </head>
 <body>
 
 <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
     <h5 class="my-0 mr-md-auto font-weight-normal"><a class="p-2 text-dark" href="/">Mentis Parchment</a></h5>
+    <form>
+        <input type="text" id="livesearchInputId" onkeyup="searchWikidata()"/>
+        <div id="wikidataSearchResultsId"><ul id="searchResultsId"></ul></div>
+    </form>
     <nav class="my-2 my-md-0 mr-md-3">
         <a class="p-2 text-dark" href="#">About</a>
     </nav>
