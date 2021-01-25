@@ -580,7 +580,7 @@ class SearchResult(object):
         # top_authors =[]
         top_authors = SearchResult.get_top_authors_of_articles(articles)
         time_change_dict = SearchResult.get_time_change_of_articles(articles)
-        time_change_list = list(time_change_dict.items())[:5]
+        time_change_list = list(time_change_dict.items())
         years = [i[0] for i in time_change_list]
         number_publication_per_year = [i[1] for i in time_change_list]
         total_articles = len(articles)
