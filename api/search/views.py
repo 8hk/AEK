@@ -89,12 +89,12 @@ def annotations(request, articleId):
             abstract = list_item["abstract"]
             break
 
-        authors_str = " ".join(authors)
+        authors_str = "; ".join(authors)
 
         # Check whether an annotation id is given.
         if annotationId is None:
             return render(request, "html/article.html",
-                          {"title": title, "authors": authors_str, "keywords": keywords, "abstract": abstract})
+                          {"title": title, "authors": authors_str, "abstract": abstract})
         else:
             pm_id = ""
             column = db["annotation_to_article"]
@@ -159,7 +159,7 @@ class SearchHelper(object):
     articles_by_term = {}
 
     def __init__(self, main_query):
-        self.main_query = main_query
+        self.main_query = main_query.lower()
         self.dimensions = []
         self.combinations = []
         # we will use this later while parsing the articles
@@ -256,7 +256,7 @@ class SearchHelper(object):
         for dimension in dimensions_json:
             dimension_obj = Dimension()
             for keyword in dimension['keywords']:
-                dimension_obj.add_keyword(keyword)
+                dimension_obj.add_keyword(keyword.lower())
             self.dimensions.append(dimension_obj)
         self.start_parsing()
 
