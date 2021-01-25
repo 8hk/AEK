@@ -25,16 +25,27 @@
     </head>
     <body>
     <div id="loader" style="display: none;">
-        <img src="{% static 'assets/flask.gif' %}"/>
+        Loading.. Please Wait
     </div>
     <div id="main-body">
         <p id="message"></p>
-        <!-- Search header -->
-        <div class="container-fluid search-header-bg text-center">
-            <h3>Search Engine</h3>
-        </div>
+        <!-- heading -->
+        <nav class="navbar search-header-bg bg-light">
+            <div class="navbar-header">
+                <ul class="nav navbar-nav">
+                    <a class="navbar-brand">Smart Article Search Engine</a>
+                </ul>
+                 </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                        <a href="/about" class="btn btn-default btn-sm">
+                            About
+                        </a>
+                </ul>
+            </div>
+        </nav>
 
-        <!-- Main query bar -->
+    <!-- Main query bar -->
         <div class="container-fluid search-bar">
             <!-- Search form -->
             <div class="search-form input-group-sm mb-3">
