@@ -222,7 +222,7 @@ class SearchHelper(object):
             # query elastic by keyword retrieve article id
             # combine them together without duplicate
             # append combined list into articles_by_term
-            article_list_from_annoation = self.get_article_ids(keyword)
+            article_list_from_annoation = self.get_article_ids_from_annotations(keyword)
             article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
             article_list_from_annoation_as_set = set(article_list_from_annoation)
             article_list_from_elastic_as_set = set(article_list_from_elastic)
@@ -245,6 +245,8 @@ class SearchHelper(object):
             work_num = len(self.search_result_list)
         else:
             work_num = 1
+        #sort search result list
+        self.search_result_list.sort(key=lambda x: x.number_of_article, reverse=False)
         with concurrent.futures.ThreadPoolExecutor(max_workers=work_num) as executor:
             while self.search_result_list:
                 dict_futures.append(executor.submit(self.search_result_list.pop().generate_dict_value, response))
@@ -335,11 +337,11 @@ class SearchHelper(object):
                 self.all_terms.append(keyword)
 
     # takes article ids from mongodb with its keyword
-    def get_article_ids(self, combination):
+    def get_article_ids_from_annotations(self, keyword):
         query = {}
-        query["body.items.value"] = combination
-        document = self.annotation_column.find(query)
         article_id_list = []
+        query["body.items.value"] = keyword
+        document = self.annotation_column.find(query)
         for x in document:
             list_item = dict(x)
             target_id_str = list_item["target"]["id"].split("/")
@@ -429,6 +431,11 @@ class SearchHelper(object):
             if list_item["id"] not in unique_papers:
                 unique_papers.append(list_item["id"])
         return len(unique_papers)
+
+    def find_annotation_size(self):
+        mongo_query = {}
+        document = self.annotation_column.find(mongo_query)
+        return document.count()
 
 
 # it is similar class with annotate_abstract
@@ -578,7 +585,7 @@ class SearchResult(object):
         # top_authors =[]
         top_authors = SearchResult.get_top_authors_of_articles(articles)
         time_change_dict = SearchResult.get_time_change_of_articles(articles)
-        time_change_list = list(time_change_dict.items())[:5]
+        time_change_list = list(time_change_dict.items())
         years = [i[0] for i in time_change_list]
         number_publication_per_year = [i[1] for i in time_change_list]
         total_articles = len(articles)
@@ -638,11 +645,17 @@ def summaryPage(request):
     return render(request, 'html/summary-page.html', args)
 
 
+def findArticleNumber():
+    helper = SearchHelper("")
+    return helper.find_stored_article_number()
+
 # how many article stored into mongodb
 def findStoredArticleNumber(request):
-    helper = SearchHelper("")
-    number_of_paper = helper.find_stored_article_number()
-    dict = {}
-    dict["value"] = number_of_paper
+    dict= findArticleNumber()
     # return render(request,json.dumps(dict))
     return HttpResponse(json.dumps(dict), content_type="application/json")
+
+
+def findAnnotationNumber():
+    helper = SearchHelper("")
+    return helper.find_annotation_size()

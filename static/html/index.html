@@ -17,23 +17,29 @@
         <link rel="stylesheet" href="{% static 'css/bootstrap-tagsinput.css' %}">
         <script src="{% static 'js/bootstrap-tagsinput.js' %}"></script>
 
+        <!-- Bootstrap 3 Glyphicons -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
         <!-- Custom scripts -->
         <script src="{% static 'js/custom/search.js' %}"></script>
 
         <!-- Custom stylesheets -->
         <link rel="stylesheet" href="{% static 'css/custom/search.css' %}">
+        <link rel="stylesheet" href="{% static 'css/custom/common.css' %}">
     </head>
     <body>
     <div id="loader" style="display: none;">
-        <img src="{% static 'assets/flask.gif' %}"/>
+        Loading.. Please Wait
     </div>
     <div id="main-body">
-        <p id="message"></p>
         <!-- Search header -->
         <div class="container-fluid search-header-bg text-center">
             <h3>Mentis Parchment</h3>
             <h4>Search Engine</h4>
         </div>
+
+        <!-- About Page Button -->
+        <a href="/about" class="btn btn-default btn-sm"><i class="glyphicon glyphicon-info-sign mentis"></i><span class="icon-text">About</span></a>
 
         <!-- Main query bar -->
         <div class="container-fluid search-bar">
