@@ -9,15 +9,18 @@ function searchWikidata() {
 
         success: function (response) {   // Successful at adding a relation.
             console.log("Search request in Wikidata is successful.");
-            console.log(response);
             let search_results_list = document.createElement('ul');
             search_results_list.setAttribute("id", "searchResultsId");
-            search_results_list.style.border="1px solid #A5ACB2";
+            search_results_list.style.border="1px solid #5bc0de";
+            search_results_list.style.overflow="auto";
+            search_results_list.style.height="100px";
+            search_results_list.style.paddingLeft="4px";
             if (response["search"]) {
                 let results = response["search"];
                 for(let idx_result = 0; idx_result < results.length; idx_result ++) {
                     let result = document.createElement('li');
-                    result.innerHTML = "<a href='" + results[idx_result]["concepturi"] + "'>" + results[idx_result]["label"] + "</a>";
+                    result.style.listStyle="none";
+                    result.innerHTML = "<a href='" + results[idx_result]["concepturi"] + "'>" + results[idx_result]["label"] + " (" + results[idx_result]["description"] + ")" + "</a>";
                     search_results_list.appendChild(result);
                 }
                 let old_results = document.getElementById("searchResultsId");
@@ -28,4 +31,14 @@ function searchWikidata() {
             console.log("Search request in Wikidata is unsuccessful.");
         }
     });
+}
+
+function showWikidataResults() {
+    console.log("show");
+    $("#searchResultsId").show();
+}
+
+function hideWikidataResults() {
+    console.log("hide");
+    $("#searchResultsId").hide();
 }

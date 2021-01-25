@@ -39,9 +39,10 @@
 <body>
 
 <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
-    <h5 class="my-0 mr-md-auto font-weight-normal"><a class="p-2 text-dark" href="/">Mentis Parchment</a></h5>
-    <form>
-        <input type="text" id="livesearchInputId" onkeyup="searchWikidata()"/>
+    <h4 class="my-0 mr-md-auto font-weight-normal"><a class="p-2 text-dark" href="/">Mentis Parchment</a></h4>
+    <form class="my-1 my-md-0 mr-md-auto">
+        <!--<label for="livesearchInputId">Search in Wikidata</label>-->
+        <input type="text" id="livesearchInputId" style="border: 0px; border-bottom: 1px solid; border-color:#5bc0de" placeholder="Search in Wikidata" onkeyup="searchWikidata()" onfocus="showWikidataResults()" onclick="hideWikidataResults()"/>
         <div id="wikidataSearchResultsId"><ul id="searchResultsId"></ul></div>
     </form>
     <nav class="my-2 my-md-0 mr-md-3">
