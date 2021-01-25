@@ -339,19 +339,14 @@ class SearchHelper(object):
     # takes article ids from mongodb with its keyword
     def get_article_ids_from_annotations(self, keyword):
         query = {}
-        #query over all keywords into search term
-        sub_keyword_strings=keyword.split(" ")
-        #dont forget to search the keyword itself
-        sub_keyword_strings.append(keyword)
         article_id_list = []
-        for sub_keyword in sub_keyword_strings:
-            query["body.value.id"] = sub_keyword
-            document = self.annotation_column.find(query)
-            for x in document:
-                list_item = dict(x)
-                target_id_str = list_item["target"]["id"].split("/")
-                if target_id_str[len(target_id_str) - 1] not in article_id_list:
-                    article_id_list.append(target_id_str[len(target_id_str) - 1])
+        query["body.value.id"] = keyword
+        document = self.annotation_column.find(query)
+        for x in document:
+            list_item = dict(x)
+            target_id_str = list_item["target"]["id"].split("/")
+            if target_id_str[len(target_id_str) - 1] not in article_id_list:
+                article_id_list.append(target_id_str[len(target_id_str) - 1])
         return article_id_list
 
     # returns a dict that consist all articles in the mongodb
