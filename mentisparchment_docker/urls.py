@@ -21,6 +21,7 @@ from django.conf import settings
 import os
 from django.views.static import serve as staticserve
 from django.conf.urls.static import static
+from api import views as apiview
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('search/', views.startSearch, name='search'),
@@ -28,4 +29,5 @@ urlpatterns = [
     path('', views.page),
     path('summary-page/', views.summaryPage, name='summaryPage'),
     path('articlenumbers/', views.findStoredArticleNumber, name='storedArticles'),
+    path('about', apiview.aboutPage, name='aboutPage'),
 ]
