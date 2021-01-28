@@ -226,7 +226,7 @@ class SearchHelper(object):
             # combine them together without duplicate
             # append combined list into articles_by_term
             article_list_from_annotation = self.get_article_ids_from_annotations(keyword)
-            article_list_from_elastic = self.get_article_ids_from_elastic(keyword)
+            article_list_from_elastic = self.get_article_ids_from_elastic_with_proximity_and_fuzzy(keyword)
             article_list_from_annotation_as_set = set(article_list_from_annotation)
             article_list_from_elastic_as_set = set(article_list_from_elastic)
             list_elastic_items_not_in_list_annotation = list(
@@ -439,6 +439,113 @@ class SearchHelper(object):
         mongo_query = {}
         document = self.annotation_column.find(mongo_query)
         return document.count()
+
+
+    def get_article_ids_from_elastic_with_proximity(self, keyword):
+        slop_option=4
+        es = Elasticsearch(hosts=["es01"])
+        res = es.search(
+            index="test5",
+            body={
+                "query": {
+                    "match_phrase": {
+                        "abstract": {"query": keyword,
+                                    "slop": slop_option
+                                    }
+                    }
+
+                }
+            }
+        )
+        result = []
+        for hit in res['hits']['hits']:
+            result.append(hit["_source"]['article_id'])
+        del res
+
+        res = es.search(
+            index="test5",
+            body={
+                "query": {
+                    "match_phrase": {
+                        "keywords": {"query": keyword,
+                                     "slop": slop_option
+                                     }
+                    }
+
+                }
+            }
+        )
+        for hit in res['hits']['hits']:
+            result.append(hit["_source"]['article_id'])
+        del res
+
+        return result
+
+    #this method allows us to search keyword fuzzy and proximity features of elastic
+    #proximity means there can be several keywords between subkeywords
+    #fuzzy means, user may mistype the keyword
+    def get_article_ids_from_elastic_with_proximity_and_fuzzy(self,keyword):
+        es = Elasticsearch(hosts=["es01"])
+        body= self.fuzzy_proximity_search_creator("abstract",keyword)
+        json_res=body
+        res = es.search(
+            index="test5",
+            body=json_res
+        )
+        result = []
+        for hit in res['hits']['hits']:
+            result.append(hit["_source"]['article_id'])
+        del res
+
+        body = self.fuzzy_proximity_search_creator("keywords", keyword)
+        json_res = body
+        res = es.search(
+            index="test5",
+            body=json_res
+        )
+        for hit in res['hits']['hits']:
+            result.append(hit["_source"]['article_id'])
+        del res
+        return result
+
+    def fuzzy_proximity_search_creator(self,type,keyword):
+        clauses=[]
+        slop_option = 5
+        fuzziness=2
+        in_order="true"
+        keyword_list=keyword.split(" ")
+        for subkeyword in keyword_list:
+            clause={
+                        "span_multi":{
+                           "match":{
+                              "fuzzy":{
+                                 type:{
+                                    "value":subkeyword,
+                                    "fuzziness":fuzziness
+                                 }
+                              }
+                           }
+                        }
+                     }
+            clauses.append(clause)
+
+        resp = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "span_near": {
+                                "clauses": clauses,
+                                "slop": slop_option,
+                                "in_order":in_order
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+
+        return json.dumps(resp)
 
 
 # it is similar class with annotate_abstract
