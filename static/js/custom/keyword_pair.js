@@ -275,9 +275,14 @@ class Pair {
                                 if (Math.floor(label) === label) {
                                     return label;
                                 }
-                            }
-
+                            },
+                            fontSize:10
                         },
+                    }],
+                    xAxes:[{
+                        ticks:{
+                            fontSize:10
+                        }
                     }]
                 },
                 responsive: true,
@@ -303,10 +308,10 @@ class Pair {
                             meta.data.forEach(function (bar, index) {
                                 var data = dataset.data[index];
                                 if (data < 20) {
-                                    ctx.fillText(data, bar._model.x, bar._model.y - 5);
+                                    ctx.fillText(data, bar._model.x, bar._model.y - 10);
                                 }
                                 else {
-                                    ctx.fillText(data, bar._model.x, bar._model.y + 30);
+                                    ctx.fillText(data, bar._model.x, bar._model.y);
                                 }
                             });
                         });
