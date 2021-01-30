@@ -743,7 +743,7 @@ class SearchResult(object):
                     dates[article.article_date] = 1
                 else:
                     dates[article.article_date] += 1
-        return dict(sorted(dates.items(), key=lambda item: item[1], reverse=True))
+        return dict(sorted(dates.items(), key=lambda item: int(item[0]), reverse=False))
 
 
 def page(request):
