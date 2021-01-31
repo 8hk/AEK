@@ -6,7 +6,7 @@ api/models.py                            1      0   100%
 api/search/admin.py                      3      0   100%
 api/search/models.py                     9      2    78%
 api/search/templatetags/filters.py      10      6    40%
-api/search/views.py                    452    308    32%
+api/search/views.py                    452    294    35%
 api/views.py                            11      6    45%
 --------------------------------------------------------
-TOTAL                                  506    329    35%
+TOTAL                                  506    315    38%
