@@ -15,4 +15,15 @@ This project uses the following open source libraries:
 - [Holderjs](https://github.com/imsky/holder) with [MIT License](https://github.com/imsky/holder/blob/master/LICENSE)
 
 ##Tests
-Run unit tests inside the "djangoapp" Docker container: ./manage.py test
+Run unit tests inside the "djangoapp" Docker container:
+
+`./manage.py test`
+
+#### Coverage
+In order to see test coverage, run the tests as follows instead:
+
+`coverage run --omit=*/venv/*,*/migrations/*,*/__init__.py,*/settings.py,*/urls.py,*/tests.py,*/manage.py ./manage.py test`
+
+Then the coverage report can be viewed via running:
+
+`coverage report`
