@@ -54,7 +54,8 @@ concepts = pickle.load(infile)
 infile.close()
 
 search_keywords = ["bipolar disorder", "manic depression", "bipolar", "manic depression disorder"]
-number_of_article = 50
+number_of_article = 0
+max_to_fetch_at_one_request = 10000
 
 annotation_list = []
 
@@ -109,15 +110,28 @@ class Article:
 class EntrezSearchRequest:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
     search_term = ""
-    max_article_limit = 20
+    max_article_limit = 0
+    start_index = 0
 
-    def __init__(self, search_term, max_article_limit):
+    def __init__(self, search_term, max_article_limit, start_index):
         self.search_term = search_term
         self.max_article_limit = max_article_limit
+        self.start_index = start_index
 
     def __str__(self):
-        return self.base_url + "esearch.fcgi?db=pubmed&term=" + self.search_term + "&retmax=" + str(
-            self.max_article_limit)
+        request_str = self.base_url + "esearch.fcgi?db=pubmed&term=" + self.search_term
+
+        if self.max_article_limit > 0:
+            request_str += "&retmax=" + str(self.max_article_limit)
+        else:
+            request_str += "&retmax=" + str(max_to_fetch_at_one_request)
+
+        if self.start_index > 0:
+            request_str += "&retstart=" + str(self.start_index)
+
+        print("Request to Entrez:  ", request_str)
+
+        return request_str
 
 
 class EntrezGetAbstractRequest:
@@ -141,10 +155,22 @@ class EntrezGetArticleRequest:
     def __str__(self):
         return self.base_url + "efetch.fcgi?db=pubmed&id=" + self.article_id + "&retmode=xml"
 
-
-def retrieve_article_ids(search_term, max_article_limit):
+def retrieve_number_of_articles(search_term):
     try:
-        response = requests.get(EntrezSearchRequest(search_term, max_article_limit))
+        response = requests.get(EntrezSearchRequest(search_term, 0, 0))
+
+        if response.ok:
+            xpars = xmltodict.parse(response.text)
+            article_count = xpars['eSearchResult']['Count']
+            return article_count
+        else:
+            print("\tThis article id could not be retrieved.")
+    except:
+        print("something related with ", sys.exc_info(), " definitely happened")
+
+def retrieve_until_none_left(search_term, max_article_limit, start_index):
+    try:
+        response = requests.get(EntrezSearchRequest(search_term, max_article_limit, start_index))
 
         if response.ok:
             xpars = xmltodict.parse(response.text)
@@ -155,8 +181,32 @@ def retrieve_article_ids(search_term, max_article_limit):
             return xpars['eSearchResult']['IdList']['Id']
         else:
             print("\tThis article id could not be retrieved.")
+            return []
     except:
         print("something related with ", sys.exc_info(), " definitely happened")
+        return []
+
+def retrieve_article_ids(search_term, max_article_limit=0):
+    all_results = []
+    start_index = 1
+    total_number_of_articles = int(retrieve_number_of_articles(search_term))
+    print("There are a total number of ", total_number_of_articles, " articles in the field.")
+    remainder = total_number_of_articles
+    if max_article_limit > 0:
+        remainder = min(max_article_limit, total_number_of_articles)
+    print("The number of articles to be retrieved is ", remainder)
+    while start_index < remainder:
+        partial_results = retrieve_until_none_left(search_term, max_article_limit, start_index)
+        remainder -= len(partial_results)
+        #print("remaining: ", remainder)
+        start_index += len(partial_results)
+        all_results.extend(partial_results)
+        #if remainder < 0 or len(partial_results) < max_article_limit or len(partial_results) < max_to_fetch_at_one_request:
+        #if remainder == 1:
+        ##if remainder <= 0:
+        ##    break
+        print("start: ", start_index, ", remainder: ", remainder)
+    return all_results
 
 
 def get_abstract_of_given_article_id(article_id):
@@ -298,14 +348,15 @@ def annotate(retrieved_article_ids):
         for idx in range(0, len(retrieved_article_ids)):
             try:
                 lock.acquire()
-                print("Retrieving articles with pubmed id=" + str(retrieved_article_ids[idx]))
-                article = retrieve_article(retrieved_article_ids[idx])
-                article.abstract = get_abstract_text(article.abstract)
-                # Ignore an article if it is already annotated.
-                if article.pm_id in already_inserted_detailed_article_id_list:
-                    print("Article ", article.pm_id, " is already annotated.")
+                article_pm_id = str(retrieved_article_ids[idx])
+                if article_pm_id in already_inserted_detailed_article_id_list:
+                    # Ignore an article if it is already annotated.
+                    print("Article ", article_pm_id, " is already annotated.")
                     continue
                 else:
+                    print("Retrieving articles with pubmed id=" + article_pm_id)
+                    article = retrieve_article(retrieved_article_ids[idx])
+                    article.abstract = get_abstract_text(article.abstract)
                     new_article_counter += 1
                     article.get_top_keywords()
                     detailed_article_object = create_detailed_article_object(article)
@@ -493,11 +544,16 @@ if __name__ == "__main__":
     retrieved_article_ids = []
     # get all detailed articles from db
     get_detailed_article_ids_from_db()
-    for search_keyword in search_keywords:
-        ids = retrieve_article_ids(search_keyword, number_of_article)
-        for i in ids:
-            if i not in retrieved_article_ids:
-                retrieved_article_ids.append(i)
+    search_query = ""
+    for index, search_keyword in enumerate(search_keywords):
+        search_query += search_keyword
+        if index < len(search_keywords):
+            search_query += "+OR+"
+
+    ids = retrieve_article_ids(search_query, number_of_article)
+    for i in ids:
+        if i not in retrieved_article_ids:
+            retrieved_article_ids.append(i)
 
     annotated_article_ids = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=1000) as executor:
