@@ -1,4 +1,4 @@
-# AEK
+# Mentis Parchment
 This project created for BOUN SWE 574 Course at Fall 2020. We are assigned as Team #2. 
 Our [team members](https://github.com/8hk/AEK/wiki/Crew) are currently working as software engineers from different companies at Istanbul/Turkey. 
 
@@ -13,3 +13,6 @@ This project uses the following open source libraries:
 - [Chart.js](https://github.com/chartjs/Chart.js/) with [MIT License](hhttps://github.com/chartjs/Chart.js/blob/master/LICENSE.md)
 - [Popper.js](https://github.com/popperjs/popper-core) with [MIT License](https://github.com/popperjs/popper-core/blob/master/LICENSE.md)
 - [Holderjs](https://github.com/imsky/holder) with [MIT License](https://github.com/imsky/holder/blob/master/LICENSE)
+
+##Tests
+Run unit tests inside the "djangoapp" Docker container: ./manage.py test
