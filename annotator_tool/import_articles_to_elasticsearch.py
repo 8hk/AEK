@@ -69,7 +69,7 @@ class ElasticSearchHandler(object):
         elastic = Elasticsearch(hosts=["es01"])
         while self.already_inserted_detailed_article_id_list:
             article_json.append(self.article_details_query(self.already_inserted_detailed_article_id_list.pop()))
-        response =helpers.bulk(elastic, self.bulk_json_data(article_json, "test5", "doc"))
+        response =helpers.bulk(elastic, self.bulk_json_data(article_json, "test6", "doc"))
         print("\nRESPONSE:", response)
         print("op finished")
 
