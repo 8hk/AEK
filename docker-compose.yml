@@ -32,13 +32,13 @@ services:
     image: app
     restart:  unless-stopped
     container_name: djangoapp
-    command: python manage.py runserver 0.0.0.0:8000
+    command: bash /mentisparchment_docker/start.sh
     volumes:
       - .:/mentisparchment_docker
       - ./static:/mentisparchment_docker/static
       - ./annotator_tool:/mentisparchment_docker/annotator_tool
     ports:
-      - 8000:8000
+      - 80:80
     links:
       - mongodb
     depends_on:
@@ -78,31 +78,32 @@ services:
     networks:
       mongo_net:
 
-  es01:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-    container_name: es01
-    environment:
-      - "discovery.type=single-node"
-      - node.name=es01
-      - cluster.name=es-docker-cluster
+##  es01:
+##    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+##    container_name: es01
+##    environment:
+##      - "discovery.type=single-node"
+##      - node.name=es01
+##      - cluster.name=es-docker-cluster
 #      - discovery.seed_hosts=es02,es03
 #      - cluster.initial_master_nodes=es01
 #      - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - data01:/usr/share/elasticsearch/data
-    ports:
-      - 9200:9200
-    networks:
-      - mongo_net
-    depends_on:
-      - mongodb
-    restart:  unless-stopped
+##      - bootstrap.memory_lock=true
+###      - "ES_JAVA_OPTS=-Xms128m -Xmx128m"
+##      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+##    ulimits:
+##      memlock:
+##        soft: -1
+##        hard: -1
+##    volumes:
+##      - data01:/usr/share/elasticsearch/data
+##    ports:
+##      - 9200:9200
+##    networks:
+##      - mongo_net
+##    depends_on:
+##      - mongodb
+##    restart:  unless-stopped
 #    es02:
 #      image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
 #      container_name: es02

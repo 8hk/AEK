@@ -41,7 +41,12 @@ client = MongoClient(
 
 db = client[os.environ.get("MONGO_INITDB_DATABASE", " ")]
 
-annotation_url = os.environ.get("ARTICLE_URL", " ")
+article_url = os.environ.get("SERVER_URL", " ")
+
+es_url = os.environ.get("ELASTIC_SEARCH_SERVICE_URL", " ")
+es_port = os.environ.get("ELASTIC_SEARCH_SERVICE_PORT", 443)
+es_username = os.environ.get("ELASTIC_SEARCH_SERVICE_USERNAME", " ")
+es_password = os.environ.get("ELASTIC_SEARCH_SERVICE_PASSWORD", " ")
 
 detailed_article_list = []
 already_inserted_detailed_article_id_list = []
@@ -178,6 +183,7 @@ def retrieve_until_none_left(search_term, max_article_limit, start_index):
             returned_article_id_count = int(xpars['eSearchResult']['RetMax'])
             print("From " + article_count + " articles " + str(
                 returned_article_id_count) + " article ids are retrieved")
+            #print(xpars)
             return xpars['eSearchResult']['IdList']['Id']
         else:
             print("\tThis article id could not be retrieved.")
@@ -378,7 +384,7 @@ def annotate(retrieved_article_ids):
                         for position in positions:
                             # print("ONTOLOGY CONCEPT: " + c.pref_label + " POSITION START:" + str(position['start']) + " POSITION END:" + str(position['end']) + "\n")
                             # print("Article with id: " + retrieved_article_ids[id] + " has ontolgy concept: " + c.id + " (synonyms=" + c.pref_label + ")")
-                            article.uri = annotation_url + "/articles/" + article.pm_id
+                            article.uri = article_url + "/articles/" + article.pm_id
                             annotation_object = create_annotation_object(annotation_counter, article, c, position)
                             if article.pm_id not in annotated_article_ids:
                                 annotated_article_ids.append(article.pm_id)
@@ -388,7 +394,7 @@ def annotate(retrieved_article_ids):
                             if len(annotation_list) > 0:
                                 write_annotations_to_database(annotation_list)
                         print("\n--------------------------------------------")
-
+                
                 article_json = {
                     "id": article.pm_id,
                     "title": article.title,
@@ -561,7 +567,8 @@ if __name__ == "__main__":
         annotated_article_ids = future.result()
 
     try:
-        elastic = Elasticsearch(hosts=["es01"])
+        #elastic = Elasticsearch(hosts=["es01"])
+        elastic = Elasticsearch(hosts=[es_url], http_auth=(es_username, es_password), port=es_port, use_ssl=True)
         # print(articles)
         response = helpers.bulk(elastic, bulk_json_data(articles, "test5", "doc"))
         # print("\nRESPONSE:", response)
