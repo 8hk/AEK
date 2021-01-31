@@ -84,15 +84,15 @@ function requestSearch() {
     // Extract dimensions from input and serialize.
     var dimensions_str = '{"dimensions":[';
     var dimensions = $("#dimensionsContainerId").children();
-    for(var i=0; i < dimensions.length; i ++) {
+    for (var i = 0; i < dimensions.length; i++) {
         console.log(dimensions[i]);
         var id = dimensions[i].getAttribute("id");
         dimensions_str += '{"keywords": [';
         dimension_str = "";
-        var tags = $("#" + id).find(".bootstrap-tagsinput").each(function() {
-            $(this).children("span").each(function() {
+        var tags = $("#" + id).find(".bootstrap-tagsinput").each(function () {
+            $(this).children("span").each(function () {
                 console.log($(this).text());
-                if(dimension_str != "") {
+                if (dimension_str != "") {
                     dimension_str += ",";
                 }
                 dimension_str = dimension_str + '\"' + $(this).text() + '\"';
@@ -100,7 +100,7 @@ function requestSearch() {
         });
         dimensions_str += dimension_str;
         dimensions_str += ']}';
-        if(i + 1 < dimensions.length) {
+        if (i + 1 < dimensions.length) {
             dimensions_str += ',';
         }
     }
@@ -129,8 +129,19 @@ function requestSearch() {
         error: function (response) {
             console.log("Search request is unsuccessful.");
         },
-        complete: function(){
-        $('#loader').hide();
+        complete: function () {
+            $('#loader').hide();
+        }
+    });
+
+}
+
+$(document).ready(function(){
+    const input = document.getElementById("mainQueryId");
+    input.addEventListener("keypress", function(event) {
+      if (event.keyCode === 13) {   // Check if the key pressed is the "Enter" key
+        event.preventDefault();
+        document.getElementById("searchButtonId").click();  // Search
       }
     });
-}
+});

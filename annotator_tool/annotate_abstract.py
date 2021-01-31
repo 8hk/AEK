@@ -387,12 +387,12 @@ def get_index_positions(text, element, offset=0):
 def create_annotation_object(id, article, concept, position):
     items = [{
         "type": "TextualBody",
-        "value": concept.pref_label
+        "value": concept.pref_label.lower()
     }]
     for synonym in concept.synonyms:
         items.append({
             "type": "TextualBody",
-            "value": synonym
+            "value": synonym.lower()
         })
     return {
         "@context": "http://www.w3.org/ns/anno.jsonld",

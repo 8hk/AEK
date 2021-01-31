@@ -17,35 +17,31 @@
         <link rel="stylesheet" href="{% static 'css/bootstrap-tagsinput.css' %}">
         <script src="{% static 'js/bootstrap-tagsinput.js' %}"></script>
 
+        <!-- Bootstrap 3 Glyphicons -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
         <!-- Custom scripts -->
         <script src="{% static 'js/custom/search.js' %}"></script>
 
         <!-- Custom stylesheets -->
         <link rel="stylesheet" href="{% static 'css/custom/search.css' %}">
+        <link rel="stylesheet" href="{% static 'css/custom/common.css' %}">
     </head>
     <body>
     <div id="loader" style="display: none;">
         Loading.. Please Wait
     </div>
     <div id="main-body">
-        <p id="message"></p>
-        <!-- heading -->
-        <nav class="navbar search-header-bg bg-light">
-            <div class="navbar-header">
-                <ul class="nav navbar-nav">
-                    <a class="navbar-brand">Smart Article Search Engine</a>
-                </ul>
-                 </div>
-            <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav navbar-right">
-                        <a href="/about" class="btn btn-default btn-sm">
-                            About
-                        </a>
-                </ul>
-            </div>
-        </nav>
+        <!-- Search header -->
+        <div class="container-fluid search-header-bg text-center">
+            <h3>Mentis Parchment</h3>
+            <h4>Search Engine</h4>
+        </div>
 
-    <!-- Main query bar -->
+        <!-- About Page Button -->
+        <a href="/about" class="btn btn-default btn-sm"><i class="glyphicon glyphicon-info-sign mentis"></i><span class="icon-text">About</span></a>
+
+        <!-- Main query bar -->
         <div class="container-fluid search-bar">
             <!-- Search form -->
             <div class="search-form input-group-sm mb-3">
@@ -54,7 +50,7 @@
             </div>
             <!-- Search button -->
             <div class="search-button text-center">
-                <a href="#" class="btn btn-default btn-sm" onclick="requestSearch()">
+                <a href="#" id="searchButtonId" class="btn btn-default btn-sm" onclick="requestSearch()">
                     <span class="glyphicon glyphicon-search"></span> Search
                 </a>
             </div>

@@ -102,6 +102,10 @@ class Pair {
         list2.className = "list-unstyled mt-3 mb-4";
         var listItem2 = document.createElement('li');
         listItem2.innerText = pair.top_authors[0]
+        /*var link2 = document.createElement('a');
+        link2.innerText = pair.top_authors[0];
+        link2.href = "#";
+        listItem2.appendChild(listItem2);*/
         list2.appendChild(listItem2)
         var listItem3 = document.createElement('li');
         listItem3.innerText = pair.top_authors[1]
