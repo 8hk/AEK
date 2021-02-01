@@ -59,7 +59,7 @@ concepts = pickle.load(infile)
 infile.close()
 
 search_keywords = ["bipolar disorder", "manic depression", "bipolar", "manic depression disorder"]
-number_of_article = 0
+number_of_article = 33000
 max_to_fetch_at_one_request = 10000
 
 annotation_list = []
@@ -570,7 +570,7 @@ if __name__ == "__main__":
         #elastic = Elasticsearch(hosts=["es01"])
         elastic = Elasticsearch(hosts=[es_url], http_auth=(es_username, es_password), port=es_port, use_ssl=True)
         # print(articles)
-        response = helpers.bulk(elastic, bulk_json_data(articles, "test6", "doc"))
+        response = helpers.bulk(elastic, bulk_json_data(articles, "test8", "doc"))
         # print("\nRESPONSE:", response)
     except Exception as e:
         print("\nERROR:", e)

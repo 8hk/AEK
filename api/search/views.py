@@ -323,7 +323,7 @@ class SearchHelper(object):
         es = Elasticsearch(hosts=[self.es_url], http_auth=(self.es_username, self.es_password), port=self.es_port, use_ssl=True)
 
         res = es.search(
-            index="test6",
+            index="test8",
             body={
                 "query": {
                     "match": {
@@ -416,7 +416,7 @@ class SearchHelper(object):
         #es = Elasticsearch(hosts=["es01"])
         es = Elasticsearch(hosts=[self.es_url], http_auth=(self.es_username, self.es_password), port=self.es_port, use_ssl=True)
         res = es.search(
-            index="test6",
+            index="test8",
             body={
                 "query": {
                     "multi_match":
