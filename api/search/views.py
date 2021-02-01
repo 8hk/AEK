@@ -450,9 +450,10 @@ class SearchHelper(object):
 
     def get_article_ids_from_elastic_with_proximity(self, keyword):
         slop_option=4
-        es = Elasticsearch(hosts=["es01"])
+        #es = Elasticsearch(hosts=["es01"])
+        es = Elasticsearch(hosts=[self.es_url], http_auth=(self.es_username, self.es_password), port=self.es_port, use_ssl=True)
         res = es.search(
-            index="test5",
+            index="test8",
             body={
                 "query": {
                     "match_phrase": {
@@ -470,7 +471,7 @@ class SearchHelper(object):
         del res
 
         res = es.search(
-            index="test5",
+            index="test8",
             body={
                 "query": {
                     "match_phrase": {
@@ -492,11 +493,12 @@ class SearchHelper(object):
     #proximity means there can be several keywords between subkeywords
     #fuzzy means, user may mistype the keyword
     def get_article_ids_from_elastic_with_proximity_and_fuzzy(self,keyword):
-        es = Elasticsearch(hosts=["es01"])
+        #es = Elasticsearch(hosts=["es01"])
+        es = Elasticsearch(hosts=[self.es_url], http_auth=(self.es_username, self.es_password), port=self.es_port, use_ssl=True)
         body= self.fuzzy_proximity_search_creator("abstract",keyword)
         json_res=body
         res = es.search(
-            index="test5",
+            index="test8",
             body=json_res
         )
         result = []
@@ -507,7 +509,7 @@ class SearchHelper(object):
         body = self.fuzzy_proximity_search_creator("keywords", keyword)
         json_res = body
         res = es.search(
-            index="test5",
+            index="test8",
             body=json_res
         )
         for hit in res['hits']['hits']:
