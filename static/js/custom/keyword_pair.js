@@ -292,11 +292,48 @@ class Pair {
                                 if (Math.floor(label) === label) {
                                     return label;
                                 }
-                            }
-
+                            },
+                            fontSize:10
                         },
+                    }],
+                    xAxes:[{
+                        ticks:{
+                            fontSize:10
+                        }
                     }]
-                }
+                },
+                responsive: true,
+                legend: {
+                    position: 'bottom',
+                    display: true,
+
+                },
+                "hover": {
+                    "animationDuration": 0
+                },
+                "animation": {
+                    "duration": 1,
+                    "onComplete": function () {
+                        var chartInstance = this.chart,
+                            ctx = chartInstance.ctx;
+
+                        ctx.font = Chart.helpers.fontString(9, Chart.defaults.global.defaultFontStyle, Chart.defaults.global.defaultFontFamily);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        this.data.datasets.forEach(function (dataset, i) {
+                            var meta = chartInstance.controller.getDatasetMeta(i);
+                            meta.data.forEach(function (bar, index) {
+                                var data = dataset.data[index];
+                                if (data < 20) {
+                                    ctx.fillText(data, bar._model.x, bar._model.y - 10);
+                                }
+                                else {
+                                    ctx.fillText(data, bar._model.x, bar._model.y);
+                                }
+                            });
+                        });
+                    }
+                },
             }
         });
     }

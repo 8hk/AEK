@@ -123,7 +123,6 @@ function requestSearch() {
 
         success: function (response) {   // Successful at adding a relation.
             console.log("Search request is successful.");
-            console.log(response);
             window.location.href = '/summary-page/';
         },
         error: function (response) {
