@@ -154,6 +154,19 @@ class Pair {
             console.log('pair index: ' + button.id)
             let index = button.id.slice(-1)
             var d = keywords.keyword_pairs[index]["articles"]
+
+            for (let ar = 0; ar < d.length; ar++) {
+                let currentArticle = d[ar];
+                if (currentArticle.authors.length > 5) {
+                    let newAuthorList = []
+                    for (let au = 0; au < 5; au++) {
+                        newAuthorList.push(currentArticle.authors[au]);
+                    }
+                    newAuthorList.push("et al");
+                    currentArticle.authors = newAuthorList;
+                }
+            }
+
             $('#example').DataTable().destroy();
             $('#example').DataTable({
                 data: d,
