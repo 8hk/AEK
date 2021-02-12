@@ -157,30 +157,54 @@ class Pair {
 
             for (let ar = 0; ar < d.length; ar++) {
                 let currentArticle = d[ar];
-                if (currentArticle.authors.length > 5) {
-                    let newAuthorList = []
-                    for (let au = 0; au < 5; au++) {
-                        newAuthorList.push(currentArticle.authors[au]);
+                currentArticle.filtered_authors = []
+                let article_counter = 0;
+                let author_list = ""
+                let filtered_author_list = ""
+                while (article_counter < currentArticle.authors.length) {
+                    if (author_list == "") {
+                        author_list = currentArticle.authors[article_counter];
+                    } else {
+                        author_list = author_list + ", " + currentArticle.authors[article_counter];
                     }
-                    newAuthorList.push("et al");
-                    currentArticle.authors = newAuthorList;
+                    if (article_counter <= 5) {
+                        if (filtered_author_list == "") {
+                            filtered_author_list = currentArticle.authors[article_counter];
+                        } else {
+                            filtered_author_list = filtered_author_list + ", " + currentArticle.authors[article_counter];
+                        }
+                    }
+                    article_counter++;
                 }
+                if (article_counter >= 5) {
+                    filtered_author_list = filtered_author_list + ", " + "et al";
+                }
+                currentArticle.author_list = author_list;
+                currentArticle.filtered_author_list = filtered_author_list;
             }
 
             $('#example').DataTable().destroy();
             $('#example').DataTable({
                 data: d,
                 searchPanes: {
-                    layout: 'columns-1',
-                    threshold: 1
+                    threshold: 1,
+                    columns: [2, 4],
+                    dtOpts: {
+                        dom: "tp",
+                        paging: true,
+                        pagingType: 'numbers',
+                        searching: true,
+                    }
                 },
                 responsive: true,
-                dom: '<"dtsp-verticalContainer"<"dtsp-verticalPanes"P>l<"dtsp-dataTable"frtip>>',
+                dom: 'Plfrtip',
+                bLengthChange: false,
                 pageLength: 20,
                 columns: [
                     {data: 'pm_id'},
                     {data: 'title'},
-                    {data: 'authors'},
+                    {data: 'author_list',},
+                    {data: 'filtered_author_list',},
                     {data: 'article_date'},
                     {data: 'article_type'},
                     {
@@ -198,6 +222,31 @@ class Pair {
                                 $(nTd).html("<a href='" + oData.article_link + "'>" + oData.article_link + "</a>");
                             }
                         }
+                    }
+                ],
+                columnDefs: [
+                    {
+                        searchPanes: {
+                            show: true
+                        },
+                        targets: [4]
+                    },
+                    {
+                        searchPanes: {
+                            orthogonal: 'sp'
+                        },
+                        targets: [2, 3],
+                        render: function (data, type, row) {
+                            if (type === 'sp') {
+                                return data.split(', ')
+                            }
+                            return data;
+                        },
+
+                    },
+                    {
+                        "targets": 2,
+                        "visible": false,
                     }
                 ]
             });
@@ -293,12 +342,12 @@ class Pair {
                                     return label;
                                 }
                             },
-                            fontSize:10
+                            fontSize: 10
                         },
                     }],
-                    xAxes:[{
-                        ticks:{
-                            fontSize:10
+                    xAxes: [{
+                        ticks: {
+                            fontSize: 10
                         }
                     }]
                 },
@@ -326,8 +375,7 @@ class Pair {
                                 var data = dataset.data[index];
                                 if (data < 20) {
                                     ctx.fillText(data, bar._model.x, bar._model.y - 10);
-                                }
-                                else {
+                                } else {
                                     ctx.fillText(data, bar._model.x, bar._model.y);
                                 }
                             });
