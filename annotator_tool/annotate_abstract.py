@@ -75,7 +75,7 @@ class Article:
     uri = ""
 
     def __init__(self, pm_id, title, journal_issn, journal_name, abstract,
-                 pubmed_link, author_list, instutation_list, article_date,article_type):
+                 pubmed_link, author_list, instutation_list, article_date, article_type):
         self.pm_id = pm_id
         self.title = title
         self.journal_issn = journal_issn
@@ -184,7 +184,7 @@ def retrieve_article(article_id):
             instutation_list = []
             articledate = ""
             article_date = ""
-            article_type=""
+            article_type = ""
             if xpars.get("PubmedArticleSet") is not None:
                 if xpars.get("PubmedArticleSet").get('PubmedArticle') is not None:
                     if xpars.get("PubmedArticleSet").get('PubmedArticle').get("MedlineCitation") is not None:
@@ -210,14 +210,30 @@ def retrieve_article(article_id):
                                 if article.get("AuthorList").get('Author') is not None:
                                     author_list_text = article["AuthorList"]['Author']
 
-                                    if len(author_list_text) > 4 or type(author_list_text) == list:
+                                    if len(author_list_text) > 1 and type(author_list_text) == list:
                                         for author_info in author_list_text:
                                             if len(author_info) > 2:
                                                 instute_name = ""
-                                                name = author_info['ForeName'] + " " + author_info['LastName']
+                                                firstname = ""
+                                                lastname = ""
+                                                if author_info.get('ForeName') is not None:
+                                                    firstname = author_info.get('ForeName')
+                                                    if author_info.get('LastName') is not None:
+                                                        lastname = author_info.get('LastName')
+                                                else:
+                                                    if author_info.get("AffiliationInfo") is not None:
+                                                        if (len(author_info['AffiliationInfo']) > 1):
+                                                            for affiliationInfo in author_info['AffiliationInfo']:
+                                                                instute_name += affiliationInfo['Affiliation'] + " "
+                                                        else:
+                                                            instute_name += author_info['AffiliationInfo'][
+                                                                'Affiliation']
+                                                        firstname = instute_name
+                                                name = firstname + " " + lastname
                                                 author_list.append(name)
                                                 if author_info.get("AffiliationInfo") is not None:
-                                                    if (len(author_info['AffiliationInfo']) > 1):
+                                                    if (len(author_info['AffiliationInfo']) > 1) and type(
+                                                            author_info['AffiliationInfo']) == list:
                                                         for affiliationInfo in author_info['AffiliationInfo']:
                                                             instute_name += affiliationInfo['Affiliation'] + " "
                                                     else:
@@ -226,20 +242,74 @@ def retrieve_article(article_id):
                                                 else:
                                                     instutation_list.append("")
 
-                                        if article.get("ArticleDate") is not None:
-                                            articledate = article["ArticleDate"]
-                                            article_date = articledate['Year']
-                                        else:
-                                            article_date = ""
-                                    elif len(author_list_text) == 1:
+
+                                    elif len(author_list_text) == 1 or (
+                                            type(author_list_text) == collections.OrderedDict and len(
+                                            author_list_text) > 3):
                                         author_info = author_list_text
                                         instute_name = ""
                                         name = author_info['ForeName'] + " " + author_info['LastName']
                                         author_list.append(name)
                                         if author_info.get("AffiliationInfo") is not None:
                                             if (len(author_info['AffiliationInfo']) > 1):
-                                                for affiliationInfo in author_info['AffiliationInfo']:
-                                                    instute_name += affiliationInfo['Affiliation'] + " "
+                                                for affiliationInfo in author_info['AffiliationInfo']['Affiliation']:
+                                                    instute_name += affiliationInfo + " "
+                                            else:
+                                                instute_name += author_info['AffiliationInfo']['Affiliation']
+                                            instutation_list.append(instute_name)
+                                        else:
+                                            instutation_list.append("")
+
+                            elif xpars.get("AuthorList") is not None:
+                                if article.get("AuthorList").get('Author') is not None:
+                                    author_list_text = article["AuthorList"]['Author']
+
+                                    if len(author_list_text) > 1 and type(author_list_text) == list:
+                                        for author_info in author_list_text:
+                                            if len(author_info) > 2:
+                                                instute_name = ""
+                                                firstname = ""
+                                                lastname = ""
+                                                if author_info.get('ForeName') is not None:
+                                                    firstname = author_info.get('ForeName')
+                                                    if author_info.get('LastName') is not None:
+                                                        lastname = author_info.get('LastName')
+                                                else:
+                                                    if author_info.get("AffiliationInfo") is not None:
+                                                        if (len(author_info['AffiliationInfo']) > 1):
+                                                            for affiliationInfo in author_info['AffiliationInfo'][
+                                                                'Affiliation']:
+                                                                instute_name += affiliationInfo + " "
+                                                        else:
+                                                            instute_name += author_info['AffiliationInfo'][
+                                                                'Affiliation']
+                                                        firstname = instute_name
+                                                name = firstname + " " + lastname
+                                                author_list.append(name)
+                                                if author_info.get("AffiliationInfo") is not None:
+                                                    if (len(author_info['AffiliationInfo']) > 1) and type(
+                                                            author_info['AffiliationInfo']) == list:
+                                                        for affiliationInfo in author_info['AffiliationInfo'][
+                                                            'Affiliation']:
+                                                            instute_name += affiliationInfo + " "
+                                                    else:
+                                                        instute_name += author_info['AffiliationInfo']['Affiliation']
+                                                    instutation_list.append(instute_name)
+                                                else:
+                                                    instutation_list.append("")
+
+
+                                    elif len(author_list_text) == 1 or (
+                                            type(author_list_text) == collections.OrderedDict and len(
+                                            author_list_text) > 3):
+                                        author_info = author_list_text
+                                        instute_name = ""
+                                        name = author_info['ForeName'] + " " + author_info['LastName']
+                                        author_list.append(name)
+                                        if author_info.get("AffiliationInfo") is not None:
+                                            if (len(author_info['AffiliationInfo']) > 1):
+                                                for affiliationInfo in author_info['AffiliationInfo']['Affiliation']:
+                                                    instute_name += affiliationInfo + " "
                                             else:
                                                 instute_name += author_info['AffiliationInfo']['Affiliation']
                                             instutation_list.append(instute_name)
@@ -249,16 +319,34 @@ def retrieve_article(article_id):
                             if article.get("ArticleDate") is not None:
                                 articledate = article["ArticleDate"]
                                 article_date = articledate['Year']
+                            elif xpars.get("PubmedArticleSet") is not None:
+                                if xpars.get("PubmedArticleSet").get("PubmedArticle") is not None:
+                                    if xpars.get("PubmedArticleSet").get("PubmedArticle").get("PubmedData") is not None:
+                                        if xpars.get("PubmedArticleSet").get("PubmedArticle").get(
+                                                "PubmedData").get("History") is not None:
+                                            if xpars.get("PubmedArticleSet").get("PubmedArticle").get(
+                                                    "PubmedData").get("History").get("PubMedPubDate") is not None:
+                                                article_date = xpars.get("PubmedArticleSet").get("PubmedArticle").get(
+                                                    "PubmedData").get("History").get("PubMedPubDate")[0].get("Year")
                             else:
                                 article_date = ""
 
                             if article.get("PublicationTypeList") is not None:
                                 if article.get("PublicationTypeList").get("PublicationType") is not None:
-                                    article_type=article["PublicationTypeList"]["PublicationType"]["#text"]
+                                    publication_type_len = len(
+                                        article.get("PublicationTypeList").get("PublicationType"))
+                                    if publication_type_len < 3 and type(
+                                            article.get("PublicationTypeList").get("PublicationType")) != list:
+                                        article_type = article["PublicationTypeList"]["PublicationType"]["#text"]
+                                    elif publication_type_len > 1 and type(
+                                            article.get("PublicationTypeList").get("PublicationType")) == list:
+                                        article_type = \
+                                        article["PublicationTypeList"]["PublicationType"][publication_type_len - 1][
+                                            "#text"]
 
                             return Article(article_id, article_title, journal_issn, journal_name, abstract, pubmed_link,
                                            author_list,
-                                           instutation_list, article_date,article_type)
+                                           instutation_list, article_date, article_type)
         except:
             print("Oops!", sys.exc_info(), "occurred for article id: ", article_id)
             print("Details about article:", article_title, " journal_issn:", journal_issn, " journal_name: ",
