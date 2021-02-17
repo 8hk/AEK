@@ -1,0 +1,10 @@
+django
+djongo
+six
+django-environ
+django-json-ld
+pymongo
+requests
+xmltodict
+elasticsearch>=7.0.0,<8.0.0
+nltk

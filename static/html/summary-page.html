@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Summary Page</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap core CSS -->
+    {#    <link rel="canonical">#}
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    <link type="text/css">
+    <link href="{% static 'css/all.min.css' %}" rel="stylesheet">
+    <link type="text/css">
+    <link href="{% static 'css/custom/card.css' %}" rel="stylesheet">
+    <link type="text/css">
+    <link href="{% static 'css/custom/datatable.css' %}" rel="stylesheet">
+    <!-- Datatable -->
+    <script
+            src="https://code.jquery.com/jquery-3.5.1.js"
+            integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+            crossorigin="anonymous"></script>
+
+    <link href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css"/>
+    <link href="https://cdn.datatables.net/searchpanes/1.2.1/css/searchPanes.dataTables.min.css" rel="stylesheet"
+          type="text/css"/>
+    <link href="https://cdn.datatables.net/select/1.3.1/css/select.dataTables.min.css" rel="stylesheet"
+          type="text/css"/>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/searchpanes/1.2.1/js/dataTables.searchPanes.min.js"></script>
+    <script src="https://cdn.datatables.net/select/1.3.1/js/dataTables.select.min.js"></script>
+    <link href="{% static 'css/custom/empty-list.css' %}" rel="stylesheet">
+    <script src="{% static 'js/custom/search_wikidata.js' %}"></script>
+
+</head>
+<body>
+
+<div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 bg-white border-bottom box-shadow">
+    <h4 class="my-0 mr-md-auto font-weight-normal"><a class="p-2 text-dark" href="/">Mentis Parchment</a></h4>
+    <form class="my-1 my-md-0 mr-md-auto">
+        <!--<label for="livesearchInputId">Search in Wikidata</label>-->
+        <input type="text" id="livesearchInputId" style="border: 0px; border-bottom: 1px solid; border-color:#5bc0de" placeholder="Search in Wikidata" onkeyup="searchWikidata()" onfocus="showWikidataResults()" onclick="hideWikidataResults()"/>
+        <div id="wikidataSearchResultsId"><ul id="searchResultsId"></ul></div>
+    </form>
+    <nav class="my-2 my-md-0 mr-md-3">
+        <a class="p-2 text-dark" href="/about">About</a>
+    </nav>
+</div>
+
+<div class="jumbotron">
+    <div class="container">
+        <div class="card-deck mb-3 text-center flex-container" id="keyword-pair-container">
+
+        </div>
+        <div id="dimensions">
+            <ul class="check-list" id="dimension-list">
+                Main query and dimensions:
+            </ul>
+        </div>
+        <div id="no-result">
+            <ul class="check-list" id="empty-result-list">
+                There is no result for following combinations:
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="jumbotron">
+    <div>
+        <h2 id="header"></h2>
+        <table id="example" class="display wrap" width="100%" style="padding: 20px">
+            <thead>
+            <tr>
+                <th>Pubmed ID</th>
+                <th>Title</th>
+                <th>All Authors</th>
+                <th>Authors</th>
+                <th>Publication Year</th>
+                <th>Article Type</th>
+                <th>Pubmed Link</th>
+                <th>Article Link</th>
+            </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<footer class="pt-4 my-md-5 pt-md-5 border-top">
+    <div class="row">
+        <div class="col-12 col-md">
+            <img class="mb-2" src="{% static 'css/bootstrap-solid.svg' %}" alt="" width="24" height="24">
+            <small class="d-block mb-3 text-muted">© 2017-2018</small>
+        </div>
+
+    </div>
+</footer>
+</div>
+<script>window.jQuery || document.write('<script src="{% static 'js/jquery-slim.min.js'%}"><\/script>')</script>
+<script src="{% static 'js/popper.min.js' %}"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/holder.min.js' %}"></script>
+<script src="{% static 'js/custom/keyword_pair.js' %}" type="module"></script>
+<script type="module">
+    document.getElementById("example").style.visibility = "hidden";
+    document.getElementById("header").style.visibility = "hidden";
+    document.getElementById("empty-result-list").style.visibility = "hidden";
+    document.getElementById("dimension-list").style.visibility = "hidden";
+    import {Pair} from "{% static 'js/custom/keyword_pair.js' %}";
+
+    var data = '{{keyword_pairs|escapejs}}';
+    console.log(data)
+    let call = new Pair(data);
+</script>
+
+
+{#        import {keyword_pair} from "% static%../js/custom/keyword_pair.js";#}
+{##}
+{#        keyword_pair();#}
+{##}
+{#    <script>keyword_pair();</script>#}
+
+</body>
+
+</html>

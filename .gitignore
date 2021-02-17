@@ -1,0 +1,15 @@
+/.env
+mongo-data/*
+!mongo-data/*.gitkeep
+mongo-app/*
+!mongo-app/*.gitkeep
+/.idea/
+/venv/
+/api/search/migrations/*
+/api/migrations/*
+/OntologyRetriever/ontology_retriever.py
+/OntologyRetriever/*
+/node_modules/
+/google-chrome-stable_current_amd64.deb
+/npm-debug.log
+/package.json

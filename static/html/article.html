@@ -1,0 +1,16 @@
+{% load static %}
+{% load filters %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+</head>
+<body>
+    <meta charset="UTF-8">
+    <h1>{{ title | safe }}</h1>
+    <p>by {{ authors | safe }}</p>
+    <p><b>Abstract</b></p>
+    <p>{{ abstract | safe }}</p>
+</body>
+</html>
+{% endblock %}
